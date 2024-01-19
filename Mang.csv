@@ -1,4 +1,4 @@
-Field Code,Acres,Owned,Yields,Type,Plants,Crop Rotation,years since till,animal,Cuts of Hay,till passes,till depth,Organic matter additions ,Soil amendments,plastic mulch,herbicides,insecticides,treated seed,organic,irrigation,Pattern Drainage Tile
+Field_Code,Acres,Owned,Yields,Type,Plants,croprotation,years since till,animal,cutshay,till passes,till depth,Organic matter additions ,Soil amendments,plastic mulch,herbicides,insecticides,treated seed,organic,irrigation,Pattern Drainage Tile
 EL1,5,1,1,pasture,Grass-legume mix (30-60% legume),,,Cow,,2,1.5,,,0,0,0,0,0,0,0
 VE5,8,1,1,corn/winter rye,,"Same crop each year for the last 3 years (i.e. corn, corn, corn) ",25,,,2,5,Dairy manure (liquid) ,,0,1,0,1,0,0,0
 VE6,14,1,3,corn,,"Same crop each year for the last 3 years (i.e. corn, corn, corn) ",5,,,2,5,Dairy manure (liquid) ,Liming materials ,0,1,0,1,0,0,0
@@ -17,7 +17,7 @@ AW14,0.5,1,,pasture,Grass-legume mix (30-60% legume),,,Cow,,0,0,Dairy manure (so
 AW15,21.7,1,2,pasture,,,,,,0,0,"Dairy manure (liquid) ,Dairy manure (solid), Black Gypsum","Certified organic fertilizer amendments (i.e. Bone meal, Feathermeal, Seed meals, ProGro etc.)",0,0,0,0,1,0,0
 AW16,19.7,1,2,pasture/hay,Grasses (less than 30% legume),,,Cow,1,0,0,"Dairy manure (liquid), Black Gypsum","Certified organic fertilizer amendments (i.e. Bone meal, Feathermeal, Seed meals, ProGro etc.)",0,0,0,0,1,1,0
 NW09H,4.17,1,2,hay,Grasses (less than 30% legume),,,,3,0,0,Dairy manure (liquid) ,"Synthetic fertilizers (i.e. Urea, Nitran, etc.) ",0,0,0,0,0,0,0
-,2,0,3,hemp,,"3 or more crops in annual sequence (i.e. pumpkins, corn, legumes) ",,,,,,Compost ,"Synthetic fertilizers (i.e. Urea, Nitran, etc.) ",0,0,0,0,0,0,0
+unknown,2,0,3,hemp,,"3 or more crops in annual sequence (i.e. pumpkins, corn, legumes) ",,,,,,Compost ,"Synthetic fertilizers (i.e. Urea, Nitran, etc.) ",0,0,0,0,0,0,0
 LC1,5.5,0,1,hay,Grasses (less than 30% legume),,,,4,0,0,Dairy manure (liquid) ,"Synthetic fertilizers (i.e. Urea, Nitran, etc.) ",0,0,0,0,0,0,1
 LC12,11.7,0,2,hay,Grass-legume mix (30-60% legume),,,,4,0,0,Dairy manure (liquid) ,"Synthetic fertilizers (i.e. Urea, Nitran, etc.) ",0,0,0,0,0,0,0
 LC14,25.8,1,2,hay,Grasses (less than 30% legume),,,,3,0,0,Dairy manure (liquid) ,,0,0,0,0,1,0,0
@@ -42,14 +42,13 @@ RM10,4,1,2,sweet corn/winter rye,,"3 or more crops in annual sequence (i.e. pump
 RM11,10,1,2,mixed veg crops,,"3 or more crops in annual sequence (i.e. pumpkins, corn, legumes) ",3,,,5,10,Compost ,"Certified organic fertilizer amendments (i.e. Bone meal, Feathermeal, Seed meals, ProGro etc.),Other (i.e. foliar spray, mineral blend ) ",1,0,0,0,1,1,0
 AW13,26,0,1,pasture/hay,Grasses (less than 30% legume),,,,2,0,8,Dairy manure (liquid) ,,0,0,0,0,1,0,0
 AW12,33,1,2,hay/alfalfa/grass,Legume (more than 60% legume),"3 or more crops in annual sequence (i.e. pumpkins, corn, legumes) ",2,,3,0,8,Beef Manure (liquid),,0,0,0,0,1,0,0
-Z1,45,0,2,Pasture ,Grasses (less than 30% legume),"Same crop each year for the last 3 years (i.e. corn, corn, corn) ",,Cow,,O,0,"Dairy manure (solid) ,Compost ,Other","Certified organic fertilizer amendments (i.e. Bone meal, Feathermeal, Seed meals, ProGro etc.),Other (i.e. foliar spray, mineral blend ) ",0,0,0,0,1,0,0
+Z1,45,0,2,Pasture ,Grasses (less than 30% legume),"Same crop each year for the last 3 years (i.e. corn, corn, corn) ",,Cow,,0,0,"Dairy manure (solid) ,Compost ,Other","Certified organic fertilizer amendments (i.e. Bone meal, Feathermeal, Seed meals, ProGro etc.),Other (i.e. foliar spray, mineral blend ) ",0,0,0,0,1,0,0
 Z2,22,1,2,Pasture,Grass-legume mix (30-60% legume),"Same crop each year for the last 3 years (i.e. corn, corn, corn) ",,Cow,,0,0,"Dairy manure (solid) ,Compost ,Other","Liming materials ,Other (i.e. foliar spray, mineral blend ) ",0,0,0,0,1,0,0
 D2,14.9,0,1,wheat/clover,,,1,,,3,10,Poultry manure ,,0,0,0,0,1,0,0
 DA3,3.1,1,,hay,Legume (more than 60% legume),,,,,0,0,Dairy manure (liquid) ,"Synthetic fertilizers (i.e. Urea, Nitran, etc.) ",0,0,0,0,0,0,1
 DA2,4,1,,hay,Legume (more than 60% legume),,,,,0,0,Dairy manure (liquid) ,"Synthetic fertilizers (i.e. Urea, Nitran, etc.) ",0,0,0,0,0,0,1
 DA1,3.2,1,,hay,Legume (more than 60% legume),,,,,0,0,Dairy manure (liquid) ,"Synthetic fertilizers (i.e. Urea, Nitran, etc.) ",0,0,0,0,0,0,0
 DA4,1.6,1,,hay,Legume (more than 60% legume),,,,,0,0,Dairy manure (liquid) ,"Synthetic fertilizers (i.e. Urea, Nitran, etc.) ",0,0,0,0,0,0,0
-H5,,0,,hay,,,,,,,,,,,,,,,,
-PS24,5.8,1,2,hay,Grasses (less than 30% legume),,,,3,0,0,Dairy manure (liquid) ,,No,No,No,No,No,No,No
-D7,7.5,1,2,pasture,Legume (more than 60% legume),,,Cow,,1,5,Beef Manure,Microbial inoculant ,No,No,No,No,Yes,No,Yes
-D8,12.5,1,1,pasture/hay,Grass-legume mix (30-60% legume),,,Cow,,0,0,Dairy manure (solid) ,Liming materials ,No,No,No,No,Yes,No,No
+PS24,5.8,1,2,hay,Grasses (less than 30% legume),,,,3,0,0,Dairy manure (liquid) ,,0,0,0,0,0,0,0
+D7,7.5,1,2,pasture,Legume (more than 60% legume),,,Cow,,1,5,Beef Manure,Microbial inoculant ,0,0,0,0,1,0,1
+D8,12.5,1,1,pasture/hay,Grass-legume mix (30-60% legume),,,Cow,,0,0,Dairy manure (solid) ,Liming materials ,0,0,0,0,1,0,0
