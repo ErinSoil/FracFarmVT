@@ -12,7 +12,8 @@ library(dplyr)
 Frac <- read.csv(file="Frac.csv", header=TRUE, sep=",")
 Loc <- read.csv(file="Location.csv", header=TRUE, sep=",")
 Mang <- read.csv(file="Mang.csv", header=TRUE, sep=",") 
-Master <- read.csv(file="Master.csv", header=TRUE, sep=",") 
+Master <- read.csv(file="Master.csv", header=TRUE, sep=",")
+PRISM <- read.csv(file="PRISM.csv", header=TRUE, sep=",")
 
 # Get summary statistics
 data_summary <- summary(Mang)
@@ -20,9 +21,20 @@ data_summary <- summary(Mang)
 data_min <- min(Mang$Acres,na.rm=TRUE)
 data_max <- max(Mang$Acres,na.rm=TRUE)
 
+data_summary <-summary(PRISMannual)
+data_min <- min(PRISMannual$ppt..inches.,na.rm=TRUE)
+data_max <- max(PRISMannual$ppt..inches.,na.rm=TRUE)
+
+data_summary <-summary(PRISMannual)
+data_min <- min(PRISMannual$tmean..degrees.F.,na.rm=TRUE)
+data_max <- max(PRISMannual$tmean..degrees.F,na.rm=TRUE)
+
 # replace column name (new name=old name)
 Mang<-Mang %>%
   rename(Field_Code=Field.Code)
+
+PRISMannual<-PRISMannual %>%
+  rename(Field_Code=Name)
 
 # join tables
 data<-Frac %>%
@@ -31,9 +43,18 @@ data<-Frac %>%
          Owned=as.factor(Owned))
 
 data<-data %>%
-    left_join(.,Master,by="Field_Code") 
+    left_join(.,Master,by=c("Field_Code", "soil_texture_class")) 
+
+data<-data %>%
+  left_join(.,Master,by="Field_Code") 
 
 names(data)
+
+data<-data %>%
+  left_join(.,PRISMannual,by="Field_Code")
+
+        
+
 
 #data exploration graphs
 
@@ -118,6 +139,8 @@ data.stats <- data %>%
   max=max(years.since.till, na.rm = TRUE), 
   sd=sd(years.since.till, na.rm = TRUE))
 
+# subset to get annual ppt only
+PRISMannual <- subset(PRISM,Date=="Annual") 
 
 #data exploration graphs
 
@@ -127,6 +150,12 @@ ggplot(data,aes(x=Type.x, y=till.passes, color=Type.x)) + geom_bar ()
 
 ggplot(data,aes(x=Type.x, y=till.depth, color=Type.x)) + geom_point ()
 
+ggplot (PRISMannual, aes (x=ppt..inches.))+
+  geom_histogram()
 
+max()
 
+ggplot(PRISMannual,aes(x=Name, y=ppt..inches, color=Name))+ geom_point ()
 
+ggplot(data,aes(x=ppt..inches., y=mgCpergSoilP,color=ppt..inches.))+ geom_point ()
+ggplot(data,aes(x=tmean..degrees.F., y=mgCpergSoilP,color=tmean..degrees.F.))+ geom_point ()
