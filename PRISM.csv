@@ -1,13 +1,3 @@
-PRISM Time Series Data,,,,,,
-Locations: 292,,,,,,
-"Climate variables: ppt,tmean",,,,,,
-Spatial resolution: 800m,,,,,,
-Monthly 1991-2020 Normals,,,,,,
-Dataset: Norm91m,,,,,,
-PRISM day definition: 24 hours ending at 1200 UTC on the day shown,,,,,,
-Grid Cell Interpolation: On,,,,,,
-Time series generated: 2024-Jan-23,,,,,,
-Details: http://www.prism.oregonstate.edu/documents/PRISM_datasets.pdf,,,,,,
 Name,Longitude,Latitude,Elevation (ft),Date,ppt (inches),tmean (degrees F)
 AW14,-72.43,43.7,823,January,2.92,18.2
 AW14,-72.43,43.7,823,February,2.59,20.4
