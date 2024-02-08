@@ -20,7 +20,18 @@ weather_history(
 )
   apply(array, margin, ...)
   
+# work with Nclimgrid data  
+library(raster)
   
+r <- brick("nclimgrid_tavg.nc")
+  
+xy <- SpatialPoints(cbind(-81.8125, 24.5625))
+  
+  result <- extract(r, xy, sp=T)
+  
+  
+  
+  result$X2023.07.01   
   
  
 

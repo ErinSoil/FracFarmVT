@@ -1,0 +1,223 @@
+#exploring data of fractionation study
+
+#setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
+setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
+
+#load your libraries
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+
+##call in the analytical data
+Frac <- read.csv(file="Frac.csv", header=TRUE, sep=",")
+Loc <- read.csv(file="Location.csv", header=TRUE, sep=",")
+Mang <- read.csv(file="Mang.csv", header=TRUE, sep=",") 
+Master <- read.csv(file="Master.csv", header=TRUE, sep=",")
+PRISM <- read.csv(file="PRISM.csv", header=TRUE, sep=",")
+PRISM2 <- read.csv(file="PRISM2.csv", header=TRUE, sep=",")
+PRISM2annual <- read.csv(file="PRISM2.csv", header=TRUE, sep=",")
+
+# Get summary statistics
+data_summary <- summary(Mang)
+
+data_min <- min(Mang$Acres,na.rm=TRUE)
+data_max <- max(Mang$Acres,na.rm=TRUE)
+
+data_summary <-summary(PRISMannual)
+data_min <- min(PRISMannual$ppt..inches.,na.rm=TRUE)
+data_max <- max(PRISMannual$ppt..inches.,na.rm=TRUE)
+
+data_summary <-summary(PRISMannual)
+data_min <- min(PRISMannual$tmean..degrees.F.,na.rm=TRUE)
+data_max <- max(PRISMannual$tmean..degrees.F,na.rm=TRUE)
+
+# replace column name (new name=old name)
+Mang<-Mang %>%
+  rename(Field_Code=Field.Code)
+
+PRISMannual<-PRISMannual %>%
+  rename(Field_Code=Name)
+
+# join tables
+data<-Frac %>%
+  left_join(.,Mang,by="Field_Code")%>%
+  mutate(Type.x=as.factor(Type.x),
+         Owned=as.factor(Owned))
+
+data<-data %>%
+    left_join(.,Master,by=c("Field_Code", "soil_texture_class")) 
+
+data<-data %>%
+  left_join(.,Master,by="Field_Code") 
+
+names(data)
+
+data<-data %>%
+  left_join(.,PRISMannual,by="Field_Code")
+
+#linear mixed model
+#check for realtionships amoung variables
+
+
+library(corrplot)
+library(emmeans)
+
+#Correlation plot
+cordata <- cor(data[,c("ph","","Mid.Depth","Percent.N","Percent.C","Temperature.Celsius","pH","GWC", "C.stock.grams.m2", "N.stock.grams.per.m2","FieldMoisture.VWC","Al_ox","Fe_ox","Al_cit", "Fe_cit",
+                          "Al_pyro", "Fe_pyro", "Ca_ace", "FeAl_ox", "FeAl_cit", "FeAl_pyro")], use="pairwise.complete.obs", method="pearson")
+
+corrplot(cordata)
+
+#Models
+##GWC Landscape Model
+```{r GWC Landscape model}
+m1=lm(GWC~TWI*Mid.Depth+Northness*Mid.Depth+Location.Name, data=AllData, na.action=na.exclude, method="REML")
+summary(m1)
+anova(m1)
+
+F_Final <- fitted(m1)
+R_Final <- residuals(m1, type = "pearson", scaled = TRUE)
+N = !is.na(AllData$GWC)
+Rfull <- NA
+Rfull[N] <- R_Final
+op <- par(mfrow = c(2,2), mar = c(5,4,1,1))
+plot(F_Final, R_Final)
+hist(Rfull)
+boxplot(Rfull ~ AllData$Location.Name)
+boxplot(Rfull ~ AllData$Mid.Depth)
+plot(Rfull ~ AllData$TWI)
+plot(Rfull ~ AllData$Northness)
+par(op)
+
+#partial residuals to test that the relationship is linear
+#partial residual plot, TWI
+TWI.c <- summary(m1)$coefficients[2] #predictor coefficient
+TWI.pr <- Rfull + TWI.c*AllData$TWI  #Residuals + pred coef * predictor value
+{scatter.smooth(AllData$TWI, TWI.pr, 
+                lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
+  abline(lm(TWI.c*AllData$TWI ~ AllData$TWI), col = "red")} 
+
+#partial residual plot, Northness
+Northness.c <- summary(m1)$coefficients[4] #predictor coefficient
+Northness.pr <- Rfull + Northness.c*AllData$Northness  #Residuals + pred coef * predictor value
+{scatter.smooth(AllData$Northness, Northness.pr, 
+                lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
+  abline(lm(Northness.c*AllData$Northness ~ AllData$Northness), col = "red")} 
+
+#Visualize the depth by TWI interaction
+TWI.rg = ref_grid(m1, at = list(TWI=c(6,7,8,9,10)))
+emmip(TWI.rg, Mid.Depth ~ TWI, style="factor") 
+#There is a stronger effect of TWI at deeper depths
+Collapse
+
+
+
+
+
+
+
+
+
+#data exploration graphs
+
+ggplot(data,aes(x=mgCpergSoilM, y=ph.x, color=Type.x)) + 
+  geom_point () +
+  geom_smooth(method="lm")
+
+ggplot(data,aes(x=mgCpergSoilM, y=ph.x)) + geom_point ()
+
+ggplot(data,aes(x=propM, y=ph.x, color=Type.x)) + 
+  geom_point () +
+  geom_smooth(method="lm")
+
+ggplot(data,aes(x=ph.x, y=propM, color=Type.x)) + 
+  geom_point () +
+  geom_smooth(method="lm")
+
+ggplot(data,aes(x=Type.x, y=ph.x, color=Type.x)) + 
+  geom_point () +
+ 
+  #add mean ph for each Type
+ 
+
+str(data)
+
+
+
+
+
+# count to look at summarized data
+data %>%
+  group_by(Type.x,Owned)%>%
+  summarize(n=n())
+
+data %>%
+ count(Type.x,Owned)
+
+data %>%
+  count(Type.x,years.since.till)
+
+data %>%
+  count(Type.x,animal)
+
+data %>%
+  count(Type.x,animal)
+
+data %>%
+  count(Type.x,till.passes)
+
+data %>%
+  count(Type.x,till.depth)
+
+data %>%
+  count(Type.x,plastic.mulch)
+data %>%
+  count(Type.x,herbicides)
+data %>%
+  count(Type.x,insecticides)
+data %>%
+  count(Type.x,treated.seed)
+data %>%
+  count(Type.x,organic)
+data %>%
+  count(Type.x,Pattern.Drainage.Tile)
+data %>%
+  count(Type.x,irrigation)
+
+data %>%
+  count(Type.y,irrigation)
+
+#summarize the data in a new dataframe
+
+data.stats <- data %>% 
+  group_by(Type.x) %>%
+  summarize (n=n(),
+            mean=mean(years.since.till, na.rm = TRUE), 
+            min=min(years.since.till, na.rm = TRUE), 
+            max=max(years.since.till, na.rm = TRUE), 
+            sd=sd(years.since.till, na.rm = TRUE),
+            mean=mean(years.since.till, na.rm = TRUE), 
+  min=min(years.since.till, na.rm = TRUE), 
+  max=max(years.since.till, na.rm = TRUE), 
+  sd=sd(years.since.till, na.rm = TRUE))
+
+# subset to get annual ppt only
+PRISMannual <- subset(PRISM,Date=="Annual") 
+
+#data exploration graphs
+
+ggplot(data,aes(x=count till.passes, y=till.passes, color=Type.x)) + geom_point ()
+
+ggplot(data,aes(x=Type.x, y=till.passes, color=Type.x)) + geom_bar ()
+
+ggplot(data,aes(x=Type.x, y=till.depth, color=Type.x)) + geom_point ()
+
+ggplot (PRISMannual, aes (x=ppt..inches.))+
+  geom_histogram()
+
+max()
+
+ggplot(PRISMannual,aes(x=Name, y=ppt..inches, color=Name))+ geom_point ()
+
+ggplot(data,aes(x=ppt..inches., y=mgCpergSoilP,color=ppt..inches.))+ geom_point ()
+ggplot(data,aes(x=tmean..degrees.F., y=mgCpergSoilP,color=tmean..degrees.F.))+ geom_point ()
