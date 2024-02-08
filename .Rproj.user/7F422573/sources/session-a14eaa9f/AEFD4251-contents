@@ -13,8 +13,6 @@ Frac <- read.csv(file="Frac.csv", header=TRUE, sep=",")
 Loc <- read.csv(file="Location.csv", header=TRUE, sep=",")
 Mang <- read.csv(file="Mang.csv", header=TRUE, sep=",") 
 Master <- read.csv(file="Master.csv", header=TRUE, sep=",")
-PRISM <- read.csv(file="PRISM.csv", header=TRUE, sep=",")
-PRISM2 <- read.csv(file="PRISM2.csv", header=TRUE, sep=",")
 PRISM2annual <- read.csv(file="PRISM2.csv", header=TRUE, sep=",")
 
 # Get summary statistics
@@ -38,22 +36,19 @@ Mang<-Mang %>%
 PRISMannual<-PRISMannual %>%
   rename(Field_Code=Name)
 
+mutate(Type.x=as.factor(Type.x),
+       Owned=as.factor(Owned))
+
 # join tables
 data<-Frac %>%
-  left_join(.,Mang,by="Field_Code")%>%
-  mutate(Type.x=as.factor(Type.x),
-         Owned=as.factor(Owned))
-
+  left_join(.,Mang,by="Field_Code")
 data<-data %>%
     left_join(.,Master,by=c("Field_Code", "soil_texture_class")) 
-
 data<-data %>%
   left_join(.,Master,by="Field_Code") 
-
-names(data)
-
 data<-data %>%
-  left_join(.,PRISMannual,by="Field_Code")
+  left_join(.,PRISM2annual,by="Field_Code")
+names(data)
 
 #linear mixed model
 #check for realtionships amoung variables
@@ -63,8 +58,7 @@ library(corrplot)
 library(emmeans)
 
 #Correlation plot
-cordata <- cor(data[,c("ph","","Mid.Depth","Percent.N","Percent.C","Temperature.Celsius","pH","GWC", "C.stock.grams.m2", "N.stock.grams.per.m2","FieldMoisture.VWC","Al_ox","Fe_ox","Al_cit", "Fe_cit",
-                          "Al_pyro", "Fe_pyro", "Ca_ace", "FeAl_ox", "FeAl_cit", "FeAl_pyro")], use="pairwise.complete.obs", method="pearson")
+cordata <- cor(data[,c("ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
 
 corrplot(cordata)
 
