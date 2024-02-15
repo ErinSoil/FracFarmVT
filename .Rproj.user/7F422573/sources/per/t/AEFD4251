@@ -3,24 +3,24 @@
     "path": "~/GitHub/FracFarmVT/fracRcode.R",
     "project_path": "fracRcode.R",
     "type": "r_source",
-    "hash": "0",
+    "hash": "656050447",
     "contents": "",
-    "dirty": true,
+    "dirty": false,
     "created": 1704307851115.0,
     "source_on_save": false,
     "relative_order": 2,
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "5,0",
-        "scrollLine": "0"
+        "cursorPosition": "224,0",
+        "scrollLine": "212"
     },
     "folds": "",
-    "lastKnownWriteTime": 1706727424,
+    "lastKnownWriteTime": 1708027672,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1707408112807,
+    "last_content_update": 1708027672485,
     "read_only": false,
     "read_only_alternatives": []
 }
