@@ -222,47 +222,51 @@ m5=gls(mgCpergSoilM~ppt.cm+soil_texture_clay.x+
 anova(m4,m5)
 anova(m5)
 
-```{r GWC Landscape model}
-m1=lm(GWC~TWI*Mid.Depth+Northness*Mid.Depth+Location.Name, data=AllData, na.action=na.exclude, method="REML")
+#check assumptions, distrubution of residuals
+
+```{r mgCpergSoilM Landscape model}
+m1=lm(mgCpergSoilM~ppt.cm*soil_texture_clay.x*
+  tmeanC*aggregate_stability.x*
+  active_carbon.x, data=data, na.action=na.exclude, method="REML")
 summary(m1)
 anova(m1)
 
 F_Final <- fitted(m1)
 R_Final <- residuals(m1, type = "pearson", scaled = TRUE)
-N = !is.na(AllData$GWC)
+N = !is.na(data$mgCpergSoilM)
 Rfull <- NA
 Rfull[N] <- R_Final
-op <- par(mfrow = c(2,2), mar = c(5,4,1,1))
+op <- par(mfrow = c(2,2), mar = c(5,4,1,1))  #I can't figure this part out
 plot(F_Final, R_Final)
 hist(Rfull)
-boxplot(Rfull ~ AllData$Location.Name)
-boxplot(Rfull ~ AllData$Mid.Depth)
-plot(Rfull ~ AllData$TWI)
-plot(Rfull ~ AllData$Northness)
+boxplot(Rfull ~ data$mgCpergSoilM)
+boxplot(Rfull ~ data$aggregate_stability.x)
+plot(Rfull ~ data$soil_texture_clay.x)
+plot(Rfull ~ data$active_carbon.x)
+plot(Rfull ~ data$tmeanC)
+plot(Rfull ~ data$ppt.cm)
 par(op)
 
 #partial residuals to test that the relationship is linear
-#partial residual plot, TWI
-TWI.c <- summary(m1)$coefficients[2] #predictor coefficient
-TWI.pr <- Rfull + TWI.c*AllData$TWI  #Residuals + pred coef * predictor value
-{scatter.smooth(AllData$TWI, TWI.pr, 
+#partial residual plot, soil_texture_clay.x
+soil_texture_clay.x.c <- summary(m1)$coefficients[2] #predictor coefficient
+soil_texture_clay.x.pr <- Rfull + soil_texture_clay.x*data$soil_texture_clay.x  #Residuals + pred coef * predictor value
+{scatter.smooth(data$soil_texture_clay.x, soil_texture_clay.x.pr, 
                 lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
-  abline(lm(TWI.c*AllData$TWI ~ AllData$TWI), col = "red")} 
+  abline(lm(soil_texture_clay.x.c*data$soil_texture_clay.x ~ data$soil_texture_clay.x), col = "red")} 
 
-#partial residual plot, Northness
-Northness.c <- summary(m1)$coefficients[4] #predictor coefficient
-Northness.pr <- Rfull + Northness.c*AllData$Northness  #Residuals + pred coef * predictor value
-{scatter.smooth(AllData$Northness, Northness.pr, 
-                lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
-  abline(lm(Northness.c*AllData$Northness ~ AllData$Northness), col = "red")} 
 
-#Visualize the depth by TWI interaction
-TWI.rg = ref_grid(m1, at = list(TWI=c(6,7,8,9,10)))
-emmip(TWI.rg, Mid.Depth ~ TWI, style="factor") 
-#There is a stronger effect of TWI at deeper depths
+#Visualize the mgCpergSoilM by interaction
+mgCpergSoilM.rg = ref_grid(m1, at = list(mgCpergSoilM=c(6,7,8,9,10)))
+emmip(mgCpergSoilM.rg, tmeanC ~ mgCpergSoilM, style="factor") 
+#There is a stronger effect of mgCpergSoilM at colder temps??
 Collapse
 
-
+#Visualize the mgCpergSoilM by pH interaction
+mgCpergSoilM.rg = ref_grid(m1, at = list(mgCpergSoilM=c(6,7,8,9,10)))
+emmip(mgCpergSoilM.rg, pH ~ mgCpergSoilM, style="factor") 
+#There is a stronger effect of mgCpergSoilM at higher/lower pH??
+Collapse
 
 
 
