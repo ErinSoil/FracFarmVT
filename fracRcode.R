@@ -30,14 +30,13 @@ data_min <- min(PRISMannual$tmean..degrees.F.,na.rm=TRUE)
 data_max <- max(PRISMannual$tmean..degrees.F,na.rm=TRUE)
 
 # replace column name (new name=old name)
-Mang<-Mang %>%
-  rename(Field_Code=Field.Code)
+#Mang<-Mang %>%
+  #rename(Field_Code=Field.Code)
 
-PRISMannual<-PRISMannual %>%
-  rename(Field_Code=Name)
+#PRISM2annual<-PRISM2annual %>%
+  # rename(Field_Code=Name)
 
-mutate(Type.x=as.factor(Type.x),
-       Owned=as.factor(Owned))
+
 
 # join tables
 data<-Frac %>%
@@ -177,12 +176,13 @@ data <- data %>%
     facet_wrap(~ agStcategory, ncol=1, scales="free_x")
    
 #Models
-##Linear Mixed Model for dependant variable mcCpergSoilM
+##Linear Mixed Model for dependent variable (mgCpergSoilM)
 
-```{r mgCpergSoilM Linear Mixed Effects model}
 library(lme4)
 library(lmerTest)
 library(nlme)
+
+#test without random effect
 
 m1=gls(mgCpergSoilM~ppt.cm*soil_texture_clay.x+
         soil_texture_clay.x*tmeanC+ppt.cm*tmeanC+aggregate_stability.x+active_carbon.x+ 
@@ -190,10 +190,7 @@ m1=gls(mgCpergSoilM~ppt.cm*soil_texture_clay.x+
 summary(m1)
 anova(m1)
 
-m2=gls(mgCpergSoilM~ppt.cm*soil_texture_clay.x+
-         soil_texture_clay.x*tmeanC+ppt.cm*tmeanC+aggregate_stability.x+
-         active_carbon.x,
-       data=data, na.action=na.exclude, method="ML")
+
 
 anova(m1,m2)
 anova(m2)
@@ -239,8 +236,7 @@ Rfull[N] <- R_Final
 op <- par(mfrow = c(2,2), mar = c(5,4,1,1))  #I can't figure this part out
 plot(F_Final, R_Final)
 hist(Rfull)
-boxplot(Rfull ~ data$mgCpergSoilM)
-boxplot(Rfull ~ data$aggregate_stability.x)
+plot(Rfull ~ data$aggregate_stability.x)
 plot(Rfull ~ data$soil_texture_clay.x)
 plot(Rfull ~ data$active_carbon.x)
 plot(Rfull ~ data$tmeanC)
