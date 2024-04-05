@@ -1,7 +1,7 @@
 #exploring data of fractionation study
 
-setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
-#setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
+#setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
+setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
 
 #load your libraries
 library(tidyverse)
@@ -19,6 +19,8 @@ Mang <- read.csv(file="Mang.csv", header=TRUE, sep=",")
 Master <- read.csv(file="Master.csv", header=TRUE, sep=",", fileEncoding="latin1")
 PRISM2annual <- read.csv(file="PRISM2annual.csv", header=TRUE, sep=",")
 
+fracData <- read.csv(file="fracData.csv", header=TRUE, sep=",")
+
 # Get summary statistics
 data_summary <- summary(Mang)
 
@@ -34,13 +36,17 @@ data_min <- min(PRISMannual$tmean..degrees.F.,na.rm=TRUE)
 data_max <- max(PRISMannual$tmean..degrees.F,na.rm=TRUE)
 
 # join tables
-data<-Frac %>%
+fracData<-Frac %>%
   left_join(.,Mang,by="Field_Code")
-data<-data %>%
+fracData<-fracData %>%
     left_join(.,Master,by=c("Field_Code", "soil_texture_class")) 
-data<-data %>%
+fracData<-fracData %>%
   left_join(.,PRISM2annual,by="Field_Code")
-names(data)
+names(fracData)
+
+View(fracData)
+# write a new file with all the data and put it in github
+write_csv(fracData, file= "./fracData.csv") 
 
 #linear model
 #First, graphically explore relationships among variables
