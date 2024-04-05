@@ -301,6 +301,34 @@ mgMAOM_ppt
 ggsave("mgMAOM_ppt.jpeg", width = 4, height = 3)
 
 
+#for agg stability 
+own_theme <- theme_bw(base_size = 11) +
+  theme(rect = element_blank(),
+        axis.ticks = element_line(color = "black"),
+        axis.text = element_text(color = "black"),
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank())
+
+pred_aggregate_stability <- ggpredict(m1, terms = c("aggregate_stability", "soil_texture_clay[20]"))
+
+mgMAOM_aggregate_stability <-data %>% 
+  ggplot() +
+  geom_point(aes(x = aggregate_stability, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_aggregate_stability, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_x_continuous(expression("mg C in MAOM per g soil"))+
+  scale_y_continuous(expression("aggregate stability"),
+                     label = scales::comma) 
+
+mgMAOM_aggregate_stability
+
+ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)
+
+
+
 
 
 
