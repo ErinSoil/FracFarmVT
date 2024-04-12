@@ -33,7 +33,7 @@ fracData_rm <- fracDataNum %>%
  drop_na()
 
  fracData_rm <- fracDataNum %>%
-   select(active_carbon,ph,ppt.cm, mgCpergSoilM) %>%
+   select(active_carbon,ph,ppt.cm, mgCpergSoilM, Type.x) %>%
      #remove the rows with ~25ish missing data 
      drop_na() 
  
@@ -41,7 +41,7 @@ fracData_rm <- fracDataNum %>%
  
  
  # create a new dataframe with more variables for the rf
- fracData_rmALL <- fracDataNum %>%
+ fracData_rmALL <- fracData %>%
    select(active_carbon,ph,ppt.cm,tmeanC,overall.score, soil_texture_sand, soil_texture_silt, soil_texture_clay, organic_matter, aggregate_stability, pred_water_capacity, mgCpergSoilM) %>%
    #remove the rows with ~25ish missing data 
    drop_na() 
@@ -61,6 +61,8 @@ fracData_rm <- fracDataNum %>%
 #load library
 library(ranger)
 library(skimr)
+library(iml)
+library(tidyverse)
 
 #Random forest: generalizable models since it is an ensemble of multiple decorrelated trees.
 #select variables of interest by using different dataframes created above
@@ -83,15 +85,36 @@ RFtest2
 RFtest2$variable.importance
 
 
+#create partialdependance plots for mgCpergSoil(MAOM)
+
+model_data_1 <- Predictor$new(RFtest1, data = fracData_rmALL %>%
+                                dplyr::select(-mgCpergSoilM))
+
+pdp_all <- FeatureEffects$new(model_data_1, method = "pdp")
+
+
+
+plot(pdp_all)
+
+
 
 #grouped by farm type? #ask Sophie if I've done this correctly, need to figure out what to replace rf.afsis with
-fracData <- rf.afsis %>% 
-  dplyr::filter(Type.x == "Veg") %>% 
-  select(-Type.x)
+#fracData <- rf.afsis %>% 
+ ##select(-Type.x)
 
-fracData <- rf.afsis %>% 
-  dplyr::filter(Type.x == "Pasture") %>% 
-  select(-Type.x)
+#fracData <- rf.afsis %>% 
+ # dplyr::filter(Type.x == "Pasture") %>% 
+  #select(-Type.x)
+#fracData <- rf.afsis %>% 
+ # dplyr::filter(Type.x == "Hay") %>% 
+  #select(-Type.x)
 
+#fracData <- rf.afsis %>% 
+ # dplyr::filter(Type.x == "Field crops") %>% 
+  #select(-Type.x)
+
+# fracData <- rf.afsis %>% 
+#   dplyr::filter(Type.x == "Corn") %>% 
+#   select(-Type.x)
 
 head(fracData)
