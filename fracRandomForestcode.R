@@ -9,33 +9,32 @@ fracData <- read.csv(file="fracData.csv", header=TRUE, sep=",")
 str(fracData)
 
 # create a new df with select only continuous variables
-fracDataNum <- fracData %>%
+fracDataNum <- fracData 
   select_if(is.numeric)
 
 view(fracDataNum)
 
 
-#remove all rows (farm fields) that have a missing variable
+#remove all rows (farm fields) that have a missing variable #this results in no data
 fracDataNum_noNA <- fracData %>%
-  select_if(is.numeric) %>%
+  select_if(is.numeric)  %>%
   drop_na()
 
 view(fracDataNum_noNA)
 
 #summary of dataframe
-skimr::skim_without_charts(fracDataNum)
+skimr::skim_without_charts(fracDataNum_noNA)
 
 
 #remove the columns with limited data
-fracData_rm <- fracDataNum %>%
+fracData_rm <- fracData %>%
   select(#list all the columns I want to keep with commas, no ") %>%
  #remove the rows with ~25ish missing data 
  drop_na()
 
- fracData_rm <- fracDataNum %>%
-   select(active_carbon,ph,ppt.cm, mgCpergSoilM, Type.x) %>%
-     #remove the rows with ~25ish missing data 
-     drop_na() 
+ fracData_rm <- fracData %>%
+   select(active_carbon,ph,ppt.cm, mgCpergSoilP, Type.x) %>% #remove the rows with ~25ish missing data 
+    drop_na() 
  
  view(fracData_rm)
  
@@ -51,14 +50,22 @@ fracData_rm <- fracDataNum %>%
  
  
  # create a new dataframe with only a couple variables
- fracData_soilhealth <- fracDataNum %>%
+ fracData_soilhealthM <- fracDataNum %>%
    select(overall.score, mgCpergSoilM) %>%
    #remove the rows with ~25ish missing data 
    drop_na() 
  
- view(fracData_soilhealth)
+ view(fracData_soilhealthM)
  
-#load library
+ # create a new dataframe with only a couple variables (POM)
+ fracData_soilhealthP <- fracDataNum %>%
+   select(overall.score, mgCpergSoilP) %>%
+   #remove the rows with ~25ish missing data 
+   drop_na() 
+ 
+ view(fracData_soilhealthP)
+ 
+ #load library
 library(ranger)
 library(skimr)
 library(iml)
@@ -69,7 +76,12 @@ library(tidyverse)
 
 
 RFtest <- ranger(mgCpergSoilM ~ ., data = fracData_rm, importance = "permutation")
+RFtest$variable.importance
 
+RFmgCperSoilP <- ranger(mgCpergSoilP ~ ., data = fracData_rm, importance = "permutation")
+RFtest$variable.importance
+
+RFtest <- ranger(mgCpergSoilM ~ ., data = fracData_rm, importance = "permutation")
 RFtest$variable.importance
 
 #run with more variables
@@ -118,3 +130,9 @@ plot(pdp_all)
 #   select(-Type.x)
 
 head(fracData)
+
+
+#conduct RF for different variables as the predicted mgCpergSoilM, mgCpergSoilP, propM, total carbon, aggregate stablity
+#add different variables, like management data to each analysis (when analysing the mang data, make the NAs "other")
+# do the same as above for the lmm as well as the rf
+
