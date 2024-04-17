@@ -14,7 +14,6 @@ fracDataNum <- fracData
 
 view(fracDataNum)
 
-
 #remove all rows (farm fields) that have a missing variable #this results in no data
 fracDataNum_noNA <- fracData %>%
   select_if(is.numeric)  %>%
@@ -39,16 +38,27 @@ fracData_rm <- fracData %>%
  view(fracData_rm)
  
  
- # create a new dataframe with more variables for the rf
- fracData_rmALL <- fracData %>%
-   select(active_carbon,ph,ppt.cm,tmeanC,overall.score, soil_texture_sand, soil_texture_silt, soil_texture_clay, organic_matter, aggregate_stability, pred_water_capacity, mgCpergSoilM) %>%
+ # create a new dataframe with more variables for the rf propM
+ fracData_rmALLpm <- fracData %>%
+   select(active_carbon,ph,ppt.cm,tmeanC,overall.score, soil_texture_clay, organic_matter, aggregate_stability, pred_water_capacity, propM) %>%
    #remove the rows with ~25ish missing data 
    drop_na() 
  
- view(fracData_rmALL)
+ # create a new dataframe with more variables for the rf mgCpergSoilM
+ fracData_rmALLgM<- fracData %>%
+   select(active_carbon,ph,ppt.cm,tmeanC,overall.score, soil_texture_clay, organic_matter, aggregate_stability, pred_water_capacity, mgCpergSoilM) %>%
+   #remove the rows with ~25ish missing data 
+   drop_na() 
  
- 
- 
+   # create a new dataframe with more variables for the rf mgCpergSoilP
+   fracData_rmALLgP<- fracData %>%
+   select(active_carbon,ph,ppt.cm,tmeanC,overall.score, soil_texture_clay, organic_matter, aggregate_stability, pred_water_capacity, mgCpergSoilP) %>%
+     #remove the rows with ~25ish missing data 
+     drop_na() 
+   
+   #remove the rows with ~25ish missing data 
+   drop_na()  
+
  # create a new dataframe with only a couple variables
  fracData_soilhealthM <- fracDataNum %>%
    select(overall.score, mgCpergSoilM) %>%
@@ -57,7 +67,6 @@ fracData_rm <- fracData %>%
  
  view(fracData_soilhealthM)
  
- # create a new dataframe with only a couple variables (POM)
  fracData_soilhealthP <- fracDataNum %>%
    select(overall.score, mgCpergSoilP) %>%
    #remove the rows with ~25ish missing data 
@@ -65,6 +74,13 @@ fracData_rm <- fracData %>%
  
  view(fracData_soilhealthP)
  
+ fracData_soilhealthpropM <- fracDataNum %>%
+   select(overall.score, propM) %>%
+   #remove the rows with ~25ish missing data 
+   drop_na() 
+ 
+ view(fracData_soilhealthpropM)
+
  #load library
 library(ranger)
 library(skimr)
@@ -75,17 +91,31 @@ library(tidyverse)
 #select variables of interest by using different dataframes created above
 
 
-RFtest <- ranger(mgCpergSoilM ~ ., data = fracData_rm, importance = "permutation")
+RFtest <- ranger(mgCpergSoilM ~ ., data = fracData_soilhealthM, importance = "permutation")
 RFtest$variable.importance
 
-RFmgCperSoilP <- ranger(mgCpergSoilP ~ ., data = fracData_rm, importance = "permutation")
-RFtest$variable.importance
+RFtestP <- ranger(mgCpergSoilP ~ ., data = fracData_soilhealthP, importance = "permutation")
+RFtestP$variable.importance
 
-RFtest <- ranger(mgCpergSoilM ~ ., data = fracData_rm, importance = "permutation")
-RFtest$variable.importance
+RFtestprop <- ranger(propM ~ ., data = fracData_soilhealthpropM, importance = "permutation")
+RFtestprop$variable.importance
+#negative relationship with Prop M and soil health
 
-#run with more variables
-RFtest1 <- ranger(mgCpergSoilM ~ ., data = fracData_rmALL, importance = "permutation")
+
+
+#run with more variables #change the dataset fracData_rmALL to include dependant variable each time
+RFtest1 <- ranger(mgCpergSoilM ~ ., data = fracData_rmALLgM, importance = "permutation")
+RFtest1$variable.importance
+
+RFtest2 <- ranger(mgCpergSoilP ~ ., data = fracData_rmALLgP, importance = "permutation")
+RFtest2$variable.importance
+
+RFtest3 <- ranger(propM ~ ., data = fracData_rmALLpm, importance = "permutation")
+RFtest3$variable.importance
+
+RFtestpropM2 <- ranger(propM ~ ., data = fracData_rmALL, importance = "permutation")
+RFtestpropM2$variable.importance
+
 
 #run for soilHealth
 RFtest2 <- ranger(mgCpergSoilM ~ ., data = fracData_soilhealth, importance = "permutation")
@@ -97,17 +127,31 @@ RFtest2
 RFtest2$variable.importance
 
 
-#create partialdependance plots for mgCpergSoil(MAOM)
+#create partial dependance plots for mgCpergSoil(MAOM)
 
 model_data_1 <- Predictor$new(RFtest1, data = fracData_rmALL %>%
                                 dplyr::select(-mgCpergSoilM))
 
 pdp_all <- FeatureEffects$new(model_data_1, method = "pdp")
-
-
-
 plot(pdp_all)
 
+
+#create partial dependance plots for mgCpergSoil(POM)
+
+model_data_1 <- Predictor$new(RFtest1, data = fracData_rmALL %>%
+                                dplyr::select(-mgCpergSoilP))
+
+pdp_all <- FeatureEffects$new(model_data_1, method = "pdp")
+plot(pdp_all)
+
+
+#create partial dependance plots for PropMAOM
+
+model_data_1 <- Predictor$new(RFtest1, data = fracData_rmALL %>%
+                                dplyr::select(-propM))
+
+pdp_all <- FeatureEffects$new(model_data_1, method = "pdp")
+plot(pdp_all)
 
 
 #grouped by farm type? #ask Sophie if I've done this correctly, need to figure out what to replace rf.afsis with
