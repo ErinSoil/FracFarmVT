@@ -1,5 +1,11 @@
 #setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
 setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
+#load library
+library(ranger)
+library(skimr)
+library(iml)
+library(tidyverse)
+
 ##call in the analytical data
 fracData <- read.csv(file="fracData.csv", header=TRUE, sep=",")
 str(fracData) 
@@ -10,7 +16,12 @@ fracData_rmALLgM<- fracData %>%
   drop_na() 
 #create a new dataframe with more variables for the rf predictor (propM)
 fracData_rmALLpm <- fracData %>%
-  select(active_carbon,ph,ppt.cm,tmeanC,overall.score, soil_texture_clay, organic_matter, aggregate_stability, pred_water_capacity, propM) %>%
+  mutate(
+    organicNew = case_when(
+      organic == 0 ~ "NotOrganic",
+      organic== 1 ~ "Organic",
+      TRUE~"Other")) %>%
+  select(organicNew,active_carbon,ph,ppt.cm,tmeanC,overall.score, soil_texture_clay, organic_matter, aggregate_stability, pred_water_capacity, propM) %>%
   #remove the rows with ~25ish missing data 
   drop_na() 
 # create a new dataframe with more variables for the rf predictor (mgCpergSoilP)
@@ -40,12 +51,6 @@ fracData_soilhealthP <- fracData %>%
   drop_na() 
 view(fracData_soilhealthP)
 
-#load library
-library(ranger)
-library(skimr)
-library(iml)
-library(tidyverse)
-
 #Random forest: generalizable models since it is an ensemble of multiple decorrelated trees.
 #select variables of interest by using different dataframes created above
 #show each variable's relative importance
@@ -70,40 +75,80 @@ RFtestP$variable.importance
 RFtestprop <- ranger(propM ~ ., data = fracData_rmALLpm, importance = "permutation")
 RFtestprop$variable.importance
 
-#create partial dependance plots for mgCpergSoil(MAOM)
-model_data_1 <- Predictor$new(RFtestM, data =  fracData_rmALLgM %>%
+#create partial dependence plots for mgCpergSoil(MAOM)
+model_data_M <- Predictor$new(RFtestM, data =  fracData_rmALLgM %>%
                                 dplyr::select(-mgCpergSoilM))
-pdp_all <- FeatureEffects$new(model_data_1, method = "pdp")
-plot(pdp_all)
+pdp_M <- FeatureEffects$new(model_data_M, method = "pdp")
+plot(pdp_M)+
+  ggtitle("mgCpergSoilM")
 
-#create partial dependance plots for mgCpergSoil(POM)
-model_data_1 <- Predictor$new(RFtestP, data =  fracData_rmALLgP %>%
+#create partial dependence plots for mgCpergSoil(POM)
+model_data_P <- Predictor$new(RFtestP, data =  fracData_rmALLgP %>%
                                 dplyr::select(-mgCpergSoilP))
-pdp_all <- FeatureEffects$new(model_data_1, method = "pdp")
-plot(pdp_all)
+pdp_P <- FeatureEffects$new(model_data_P, method = "pdp")
+plot(pdp_P)+
+ggtitle("mgCpergSoilP")
 
-#create partial dependance plots for PropMAOM
-model_data_1 <- Predictor$new(RFtestprop, data = fracData_rmALL %>%
+#create partial dependence plots for PropMAOM
+model_data_propM <- Predictor$new(RFtestprop, data = fracData_rmALLpm %>%
                                 dplyr::select(-propM))
-pdp_all <- FeatureEffects$new(model_data_1, method = "pdp")
-plot(pdp_all)
-#create partial dependance plots for soil health RF
-model_data_SHM <- Predictor$new(RFtestSHM, data =  fracData_soilhealthM%>%
-                                  dplyr::select(-mgCpergSoilM))
-pdp_all <- FeatureEffects$new(model_data_SHM, method = "pdp")
-plot(pdp_all)
+pdp_propM <- FeatureEffects$new(model_data_propM, method = "pdp")
+plot(pdp_propM)+
+ggtitle("propM")
 
-model_data_SHP <- Predictor$new(RFtestSHP, data =  fracData_soilhealthP %>%
-                                  dplyr::select(-mgCpergSoilP))
-pdp_all <- FeatureEffects$new(model_data_SHP, method = "pdp")
-plot(pdp_all)
 
-model_data_SHprop <- Predictor$new(RFtestSHprop, data =  fracData_soilhealthpropM %>%
-                                     dplyr::select(-propM))
-pdp_all <- FeatureEffects$new(model_data_SHprop, method = "pdp")
-plot(pdp_all)
 
-#conduct Random Forest for total Carbon and total active carbon
+#conduct Random Forest for Response: Total Carbon and total active carbon and aggregate stability
+#consider if OM should be included or not look at methods for collection
+#make a PCA based on all soil health measurements and then use that PCA axis as a predictor
+
+#data exploration
+fracData %>% 
+  ggplot(aes(x = predictor, y = response)) +
+  geom_point()
+
+fracData %>% 
+  ggplot(aes(x = ppt.cm, y = mgCpergSoilM)) +
+  geom_point()
+
+str(fracData)
+
+#create a new column 
+fracData %>%
+mutate(
+  organicNew = case_when(
+    organic == 0 ~ "NotOrganic",
+    organic== 1 ~ "Organic",
+ TRUE~"Other"))
+
+
+#create new random forest using aggregate stability as response variable
+
+RFtestAgSt <- ranger(aggregate_stability ~ ., data = fracData_rmALLgM, importance = "permutation")
+RFtestAgSt$variable.importance
+
+model_data_AgSt <- Predictor$new(RFtestAgSt, data = fracData_rmALLgM %>%
+                                    dplyr::select(-aggregate_stability))
+pdp_AgSt <- FeatureEffects$new(model_data_AgSt, method = "pdp")
+plot(pdp_AgSt)+
+  ggtitle("AggregateStability")
+
+
+#Create a new RF using total_C as response variable
+# create a new dataframe with more variables for the rf predictor 
+fracData_rmALLC<- fracData %>%
+  select(total_c,active_carbon,ph,ppt.cm,tmeanC,overall.score, soil_texture_clay, aggregate_stability, pred_water_capacity, mgCpergSoilP) %>%
+  #remove the rows with ~25ish missing data 
+  drop_na() 
+RFtestC <- ranger(total_c ~ ., data = fracData_rmALLC, importance = "permutation")
+RFtestC$variable.importance
+
+model_data_C <- Predictor$new(RFtestC, data = fracData_rmALLC %>%
+                                   dplyr::select(-total_c))
+pdp_C <- FeatureEffects$new(model_data_AgSt, method = "pdp")
+plot(pdp_C)+
+  ggtitle("TotalCarbon")
+
 
 
 
@@ -150,6 +195,25 @@ fracData_rm <- fracData %>%
     #   select(-Type.x)
     
     #head(fracData)
+    
+    #create partial dependence plots for soil health RF #can't do partial dep plots with only one predictor.
+    model_data_SHM <- Predictor$new(RFtestSHM, data =  fracData_soilhealthM%>%
+                                      dplyr::select(-mgCpergSoilM))
+    pdp_SHM <- FeatureEffect$new(model_data_SHM, method = "pdp",feature = "overall.score")
+    plot(pdp_SHM)+
+      ggtitle("SoilHealthM")
+    
+    model_data_SHP <- Predictor$new(RFtestSHP, data =  fracData_soilhealthP %>%
+                                      dplyr::select(-mgCpergSoilP))
+    pdp_SHP <- FeatureEffects$new(model_data_SHP, method = "pdp")
+    plot(pdp_SHP)+
+      ggtitle("SoilHealthP")
+    
+    model_data_SHprop <- Predictor$new(RFtestSHprop, data =  fracData_soilhealthpropM %>%
+                                         dplyr::select(-propM))
+    pdp_SHprop <- FeatureEffects$new(model_data_SHprop, method = "pdp")
+    plot(pdp_SHprop)
+    ggtitle("SoilealthProp")
     
     #conduct RF for different variables as the predicted mgCpergSoilM, mgCpergSoilP, propM, total carbon, aggregate stability
     #add different variables, like management data to each analysis (when analyzing the mang data, make the NAs "other")
