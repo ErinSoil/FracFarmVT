@@ -245,7 +245,7 @@ own_theme <- theme_bw(base_size = 11) +
 
 pred_ppt <- ggpredict(m1, terms = c("ppt.cm", "soil_texture_clay[20]"))
 
-mgMAOM_ppt <-data %>% 
+mgPOM_ppt <-data %>% 
   ggplot() +
   geom_point(aes(x = ppt.cm, y = mgCpergSoilP), #plot your data
              size = 1.5, alpha = 0.5) +
@@ -253,13 +253,13 @@ mgMAOM_ppt <-data %>%
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_x_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("mg C in POM per g soil"))+
   scale_y_continuous(expression("Mean Annual Precipitation (cm)"),
                      label = scales::comma) 
 
-mgMAOM_ppt
+mgPOM_ppt
 
-ggsave("mgMAOM_ppt.jpeg", width = 4, height = 3)
+ggsave("mgPOM_ppt.jpeg", width = 4, height = 3)
 
 
 #for agg stability 
@@ -272,7 +272,7 @@ own_theme <- theme_bw(base_size = 11) +
 
 pred_aggregate_stability <- ggpredict(m1, terms = c("aggregate_stability", "soil_texture_clay[20]"))
 
-mgMAOM_aggregate_stability <-data %>% 
+mgPOM_aggregate_stability <-data %>% 
   ggplot() +
   geom_point(aes(x = aggregate_stability, y = mgCpergSoilP), #plot your data
              size = 1.5, alpha = 0.5) +
@@ -280,13 +280,13 @@ mgMAOM_aggregate_stability <-data %>%
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_x_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("mg C in POM per g soil"))+
   scale_y_continuous(expression("aggregate stability"),
                      label = scales::comma) 
 
-mgMAOM_aggregate_stability
+mgPOM_aggregate_stability
 
-ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)
+ggsave("mgPOM_aggregate_stability.jpeg", width = 4, height = 3)
 
 
 

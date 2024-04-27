@@ -51,7 +51,6 @@ write_csv(fracData, file= "./fracData.csv")
 #linear model
 #First, graphically explore relationships among variables
 
-
 #look for interactions between independent variables
 data <- data %>% 
   mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
