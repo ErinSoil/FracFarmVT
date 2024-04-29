@@ -13,43 +13,27 @@ library(nlme)
 library(ggeffects)
 
 ##call in the analytical data
-Frac <- read.csv(file="Frac.csv", header=TRUE, sep=",")
-Loc <- read.csv(file="Location.csv", header=TRUE, sep=",")
-Mang <- read.csv(file="Mang.csv", header=TRUE, sep=",") 
-Master <- read.csv(file="Master.csv", header=TRUE, sep=",", fileEncoding="latin1")
-PRISM2annual <- read.csv(file="PRISM2annual.csv", header=TRUE, sep=",")
+#Frac <- read.csv(file="Frac.csv", header=TRUE, sep=",")
+#Loc <- read.csv(file="Location.csv", header=TRUE, sep=",")
+#Mang <- read.csv(file="Mang.csv", header=TRUE, sep=",") 
+#Master <- read.csv(file="Master.csv", header=TRUE, sep=",", fileEncoding="latin1")
+#PRISM2annual <- read.csv(file="PRISM2annual.csv", header=TRUE, sep=",")
 
-fracData <- read.csv(file="fracData.csv", header=TRUE, sep=",")
-
-# Get summary statistics
-data_summary <- summary(Mang)
-
-data_min <- min(Mang$Acres,na.rm=TRUE)
-data_max <- max(Mang$Acres,na.rm=TRUE)
-
-data_summary <-summary(PRISMannual)
-data_min <- min(PRISMannual$ppt..inches.,na.rm=TRUE)
-data_max <- max(PRISMannual$ppt..inches.,na.rm=TRUE)
-
-data_summary <-summary(PRISMannual)
-data_min <- min(PRISMannual$tmean..degrees.F.,na.rm=TRUE)
-data_max <- max(PRISMannual$tmean..degrees.F,na.rm=TRUE)
+data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
 
 # join tables
-fracData<-Frac %>%
-  left_join(.,Mang,by="Field_Code")
-fracData<-fracData %>%
-    left_join(.,Master,by=c("Field_Code", "soil_texture_class")) 
-fracData<-fracData %>%
-  left_join(.,PRISM2annual,by="Field_Code")
-names(fracData)
-
-View(fracData)
-# write a new file with all the data and put it in github
-write_csv(fracData, file= "./fracData.csv") 
+#fracData<-Frac %>%
+#  left_join(.,Mang,by="Field_Code")
+# fracData<-fracData %>%
+#     left_join(.,Master,by=c("Field_Code", "soil_texture_class")) 
+# fracData<-fracData %>%
+#   left_join(.,PRISM2annual,by="Field_Code")
+# names(fracData)
 
 #linear model
 #First, graphically explore relationships among variables
+
+View (data)
 
 #look for interactions between independent variables
 data <- data %>% 
@@ -297,8 +281,8 @@ mgMAOM_ppt <-data %>%
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_x_continuous(expression("mg C in MAOM per g soil"))+
-  scale_y_continuous(expression("Mean Annual Precipitation (cm)"),
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
                      label = scales::comma) 
 
 mgMAOM_ppt
@@ -307,13 +291,6 @@ ggsave("mgMAOM_ppt.jpeg", width = 4, height = 3)
 
 
 #for agg stability 
-own_theme <- theme_bw(base_size = 11) +
-  theme(rect = element_blank(),
-        axis.ticks = element_line(color = "black"),
-        axis.text = element_text(color = "black"),
-        axis.line = element_line(color = "black"),
-        panel.grid.minor = element_blank())
-
 pred_aggregate_stability <- ggpredict(m1, terms = c("aggregate_stability", "soil_texture_clay[20]"))
 
 mgMAOM_aggregate_stability <-data %>% 
@@ -324,8 +301,8 @@ mgMAOM_aggregate_stability <-data %>%
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_x_continuous(expression("mg C in MAOM per g soil"))+
-  scale_y_continuous(expression("aggregate stability"),
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("aggregate stability"),
                      label = scales::comma) 
 
 mgMAOM_aggregate_stability
