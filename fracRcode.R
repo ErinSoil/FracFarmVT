@@ -32,10 +32,9 @@ data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
 
 #linear model
 #First, graphically explore relationships among variables
+#look for interactions between independent variables
 
 View (data)
-
-#look for interactions between independent variables
 data <- data %>% 
   mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
   
@@ -70,7 +69,6 @@ data <- data %>%
     facet_wrap(~ phcategory, ncol=1, scales="free_x")
   
   #interactions with ppt
-  
   data <- data %>% 
     mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 106.4, 110.0, Inf), labels=c("low","med","high", "veryhigh")))
   
@@ -151,7 +149,6 @@ data <- data %>%
     facet_wrap(~ agStcategory, ncol=1, scales="free_x")
    
 #Models
-
 #Correlation plot
 cordata <- cor(data[,c("mgCpergSoilM","ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
 corrplot(cordata)
@@ -163,6 +160,15 @@ corrplot(cordata)
 m1=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
         soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
       ph, data=data, na.action=na.exclude, method="ML")
+summary(m1)
+anova(m1)
+
+#anova for different field types #THIS NEEDS WORK!
+
+m1=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
+         soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
+         ph, data=data, na.action=na.exclude, method="ML") 
+group_by(Type.x)
 summary(m1)
 anova(m1)
 
@@ -267,10 +273,11 @@ par(op)
 own_theme <- theme_bw(base_size = 11) +
   theme(rect = element_blank(),
         axis.ticks = element_line(color = "black"),
-        axis.text = element_text(color = "black"),
+   axis.text = element_text(color = "black"),
         axis.line = element_line(color = "black"),
         panel.grid.minor = element_blank())
 
+#ppt and clay
 pred_ppt <- ggpredict(m1, terms = c("ppt.cm", "soil_texture_clay[20]"))
 
 mgMAOM_ppt <-data %>% 
@@ -289,8 +296,49 @@ mgMAOM_ppt
 
 ggsave("mgMAOM_ppt.jpeg", width = 4, height = 3)
 
+#tmeanC and clay
 
-#for agg stability 
+pred_tmeanC <- ggpredict(m1, terms = c("tmeanC", "soil_texture_clay[20]"))
+
+mgMAOM_tmeanC <-data %>% 
+  ggplot() +
+  geom_point(aes(x = tmeanC, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_tmeanC, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("Mean Annual Temperature (C)"),
+                     label = scales::comma) 
+
+mgMAOM_tmeanC
+
+ggsave("mgMAOM_tmeanC.jpeg", width = 4, height = 3)
+
+
+#ppt and tmeanC
+
+pred_pptC <- ggpredict(m1, terms = c("ppt.cm", "tmeanC[20]"))
+
+mgMAOM_pptC <-data %>% 
+  ggplot() +
+  geom_point(aes(x = ppt.cm, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_pptC, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("Mean Annual Precipitation (cm) and Temp (C)"),
+                     label = scales::comma) 
+
+mgMAOM_pptC
+
+ggsave("mgMAOM_ppt_tmeanC.jpeg", width = 4, height = 3)
+
+
+#for agg stability # but why is clay included? #take this out?
 pred_aggregate_stability <- ggpredict(m1, terms = c("aggregate_stability", "soil_texture_clay[20]"))
 
 mgMAOM_aggregate_stability <-data %>% 
@@ -310,7 +358,142 @@ mgMAOM_aggregate_stability
 ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)
 
 
+#for active carbon but why is clay included? #take this out?
+pred_active_carbon <- ggpredict(m1, terms = c("active_carbon", "soil_texture_clay[20]"))
 
+mgMAOM_active_carbon <-data %>% 
+  ggplot() +
+  geom_point(aes(x = active_carbon, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_active_carbon, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("active carbon"),
+                     label = scales::comma) 
+
+mgMAOM_active_carbon
+
+ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
+
+
+#for clay How do I do this when Clay isn't on it's own in the model?
+pred_soil_texture_clay <- ggpredict(m1, terms = c("soil_texture_clay[20]"))
+
+mgMAOM_soil_texture_clay <-data %>% 
+  ggplot() +
+  geom_point(aes(x = soil_texture_clay, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_soil_texture_clay, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("clay"),
+                     label = scales::comma) 
+
+mgMAOM_soil_texture_clay
+
+ggsave("mgMAOM_soil_texture_clay.jpeg", width = 4, height = 3)
+
+
+#for ph, but this includes clay... why does this work when it's not in the model? Is it trash?
+pred_ph <- ggpredict(m1, terms = c("ph", "soil_texture_clay[20]"))
+
+mgMAOM_ph <-data %>% 
+  ggplot() +
+  geom_point(aes(x = ph, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_ph, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("ph"),
+                     label = scales::comma) 
+
+mgMAOM_ph
+
+ggsave("mgMAOM_ph.jpeg", width = 4, height = 3)
+
+View(data)
+
+
+pred_ppt <- ggpredict(m1, terms = c("ppt.cm", "soil_texture_clay[20]"))
+
+mgMAOM_ppt <-data %>% 
+  ggplot() +
+  geom_point(aes(x = ppt.cm, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_ppt, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
+                     label = scales::comma) 
+
+mgMAOM_ppt
+
+ggsave("mgMAOM_ppt.jpeg", width = 4, height = 3)
+
+#for ph, but without clay
+pred_ph <- ggpredict(m1, terms = c("ph"))
+
+mgMAOM_ph <-data %>% 
+  ggplot() +
+  geom_point(aes(x = ph, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_ph, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("ph"),
+                     label = scales::comma) 
+
+mgMAOM_ph
+
+ggsave("mgMAOM_ph.jpeg", width = 4, height = 3)
+
+#for active_carbon, but without clay #but these results look totally wrong! everything zero?!
+pred_active_carbon <- ggpredict(m1, terms = c("active_carbon"))
+
+mgMAOM_active_carbon <-data %>% 
+  ggplot() +
+  geom_point(aes(x = active_carbon.c, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_active_carbon, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("active_carbon"),
+                     label = scales::comma) 
+
+mgMAOM_active_carbon
+
+ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
+
+#for aggregate stability, but without clay #this works
+pred_aggregate_stability <- ggpredict(m1, terms = c("aggregate_stability"))
+
+mgMAOM_aggregate_stability <-data %>% 
+  ggplot() +
+  geom_point(aes(x = aggregate_stability, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_aggregate_stability, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("aggregate_stability"),
+                     label = scales::comma) 
+
+mgMAOM_aggregate_stability
+
+ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)
 
 
 
