@@ -163,14 +163,18 @@ m1=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
 summary(m1)
 anova(m1)
 
-#anova for different field types #THIS NEEDS WORK!
+#anova for different field types 
 
-m1=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
-         soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
-         ph, data=data, na.action=na.exclude, method="ML") 
-group_by(Type.x)
-summary(m1)
-anova(m1)
+mType=aov(aggregate_stability~Type.x, data=data, na.action=na.exclude) 
+summary(mType)
+TukeyHSD(mType)
+
+
+mType=aov(mgperSoilM~Type.x, data=data, na.action=na.exclude) 
+summary(mType)
+TukeyHSD(mType)
+
+#box plot
 
 #check if variance structure improves the model, it does not (to test, both methods were set to REML)
 m1a=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
@@ -277,208 +281,8 @@ own_theme <- theme_bw(base_size = 11) +
         axis.line = element_line(color = "black"),
         panel.grid.minor = element_blank())
 
-#ppt and clay
-pred_ppt <- ggpredict(m1, terms = c("ppt.cm", "soil_texture_clay[20]"))
-
-mgMAOM_ppt <-data %>% 
-  ggplot() +
-  geom_point(aes(x = ppt.cm, y = mgCpergSoilM), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_ppt, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
-  scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
-                     label = scales::comma) 
-
-mgMAOM_ppt
-
-ggsave("mgMAOM_ppt.jpeg", width = 4, height = 3)
-
-#tmeanC and clay
-
-pred_tmeanC <- ggpredict(m1, terms = c("tmeanC", "soil_texture_clay[20]"))
-
-mgMAOM_tmeanC <-data %>% 
-  ggplot() +
-  geom_point(aes(x = tmeanC, y = mgCpergSoilM), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_tmeanC, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
-  scale_x_continuous(expression("Mean Annual Temperature (C)"),
-                     label = scales::comma) 
-
-mgMAOM_tmeanC
-
-ggsave("mgMAOM_tmeanC.jpeg", width = 4, height = 3)
-
-
-#ppt and tmeanC
-
-pred_pptC <- ggpredict(m1, terms = c("ppt.cm", "tmeanC[20]"))
-
-mgMAOM_pptC <-data %>% 
-  ggplot() +
-  geom_point(aes(x = ppt.cm, y = mgCpergSoilM), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_pptC, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
-  scale_x_continuous(expression("Mean Annual Precipitation (cm) and Temp (C)"),
-                     label = scales::comma) 
-
-mgMAOM_pptC
-
-ggsave("mgMAOM_ppt_tmeanC.jpeg", width = 4, height = 3)
-
-
-#for agg stability # but why is clay included? #take this out?
-pred_aggregate_stability <- ggpredict(m1, terms = c("aggregate_stability", "soil_texture_clay[20]"))
-
-mgMAOM_aggregate_stability <-data %>% 
-  ggplot() +
-  geom_point(aes(x = aggregate_stability, y = mgCpergSoilM), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_aggregate_stability, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
-  scale_x_continuous(expression("aggregate stability"),
-                     label = scales::comma) 
-
-mgMAOM_aggregate_stability
-
-ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)
-
-
-#for active carbon but why is clay included? #take this out?
-pred_active_carbon <- ggpredict(m1, terms = c("active_carbon", "soil_texture_clay[20]"))
-
-mgMAOM_active_carbon <-data %>% 
-  ggplot() +
-  geom_point(aes(x = active_carbon, y = mgCpergSoilM), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_active_carbon, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
-  scale_x_continuous(expression("active carbon"),
-                     label = scales::comma) 
-
-mgMAOM_active_carbon
-
-ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
-
-
-#for clay How do I do this when Clay isn't on it's own in the model?
-pred_soil_texture_clay <- ggpredict(m1, terms = c("soil_texture_clay[20]"))
-
-mgMAOM_soil_texture_clay <-data %>% 
-  ggplot() +
-  geom_point(aes(x = soil_texture_clay, y = mgCpergSoilM), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_soil_texture_clay, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
-  scale_x_continuous(expression("clay"),
-                     label = scales::comma) 
-
-mgMAOM_soil_texture_clay
-
-ggsave("mgMAOM_soil_texture_clay.jpeg", width = 4, height = 3)
-
-
-#for ph, but this includes clay... why does this work when it's not in the model? Is it trash?
-pred_ph <- ggpredict(m1, terms = c("ph", "soil_texture_clay[20]"))
-
-mgMAOM_ph <-data %>% 
-  ggplot() +
-  geom_point(aes(x = ph, y = mgCpergSoilM), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_ph, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
-  scale_x_continuous(expression("ph"),
-                     label = scales::comma) 
-
-mgMAOM_ph
-
-ggsave("mgMAOM_ph.jpeg", width = 4, height = 3)
-
-View(data)
-
-
-pred_ppt <- ggpredict(m1, terms = c("ppt.cm", "soil_texture_clay[20]"))
-
-mgMAOM_ppt <-data %>% 
-  ggplot() +
-  geom_point(aes(x = ppt.cm, y = mgCpergSoilM), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_ppt, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
-  scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
-                     label = scales::comma) 
-
-mgMAOM_ppt
-
-ggsave("mgMAOM_ppt.jpeg", width = 4, height = 3)
-
-#for ph, but without clay
-pred_ph <- ggpredict(m1, terms = c("ph"))
-
-mgMAOM_ph <-data %>% 
-  ggplot() +
-  geom_point(aes(x = ph, y = mgCpergSoilM), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_ph, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
-  scale_x_continuous(expression("ph"),
-                     label = scales::comma) 
-
-mgMAOM_ph
-
-ggsave("mgMAOM_ph.jpeg", width = 4, height = 3)
-
-#for active_carbon, but without clay #but these results look totally wrong! everything zero?!
-pred_active_carbon <- ggpredict(m1, terms = c("active_carbon"))
-
-mgMAOM_active_carbon <-data %>% 
-  ggplot() +
-  geom_point(aes(x = active_carbon.c, y = mgCpergSoilM), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_active_carbon, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
-  scale_x_continuous(expression("active_carbon"),
-                     label = scales::comma) 
-
-mgMAOM_active_carbon
-
-ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
-
-#for aggregate stability, but without clay #this works
+#for aggregate stability
 pred_aggregate_stability <- ggpredict(m1, terms = c("aggregate_stability"))
-
 mgMAOM_aggregate_stability <-data %>% 
   ggplot() +
   geom_point(aes(x = aggregate_stability, y = mgCpergSoilM), #plot your data
@@ -490,115 +294,111 @@ mgMAOM_aggregate_stability <-data %>%
   scale_y_continuous(expression("mg C in MAOM per g soil"))+
   scale_x_continuous(expression("aggregate_stability"),
                      label = scales::comma) 
-
 mgMAOM_aggregate_stability
-
 ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)
 
 
+#tmeanC
+pred_pptC <- ggpredict(m1, terms = c("tmeanC"))
 
+mgMAOM_pptC <-data %>% 
+  ggplot() +
+  geom_point(aes(x = tmeanC, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_pptC, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("Mean Annual Temp (C)"),
+                     label = scales::comma) 
 
-#####OLD CODE########
-#data exploration graphs
-
-ggplot(data,aes(x=mgCpergSoilM, y=ph.x, color=Type.x)) + 
-  geom_point () +
-  geom_smooth(method="lm")
-
-ggplot(data,aes(x=mgCpergSoilM, y=ph.x)) + geom_point ()
-
-ggplot(data,aes(x=propM, y=ph.x, color=Type.x)) + 
-  geom_point () +
-  geom_smooth(method="lm")
-
-ggplot(data,aes(x=ph.x, y=propM, color=Type.x)) + 
-  geom_point () +
-  geom_smooth(method="lm")
-
-ggplot(data,aes(x=Type.x, y=ph.x, color=Type.x)) + 
-  geom_point () +
- 
-  #add mean ph for each Type
- 
-
-str(data)
+mgMAOM_tmeanC
+ggsave("mgMAOM_tmeanC.jpeg", width = 4, height = 3)
 
 
 
+#ppt
+pred_ppt <- ggpredict(m1, terms = c("ppt.cm"))
+mgMAOM_ppt <-data %>% 
+  ggplot() +
+  geom_point(aes(x = ppt.cm, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_ppt, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
+                     label = scales::comma) 
+mgMAOM_ppt
+ggsave("mgMAOM_ppt.jpeg", width = 4, height = 3)
 
 
-# count to look at summarized data
-data %>%
-  group_by(Type.x,Owned)%>%
-  summarize(n=n())
+#for clay # not sig different from zero, a little negative
+pred_soil_texture_clay <- ggpredict(m1, terms = c("soil_texture_clay"))
+mgMAOM_soil_texture_clay <-data %>% 
+  ggplot() +
+  geom_point(aes(x = soil_texture_clay, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_soil_texture_clay, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("clay"),
+                     label = scales::comma) 
+mgMAOM_soil_texture_clay
+ggsave("mgMAOM_soil_texture_clay.jpeg", width = 4, height = 3)
 
-data %>%
- count(Type.x,Owned)
+#ph
+pred_ph <- ggpredict(m1, terms = c("ph"))
+mgMAOM_ph <-data %>% 
+  ggplot() +
+  geom_point(aes(x = ph, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_ph, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("ph"),
+                     label = scales::comma) 
+mgMAOM_ph
+ggsave("mgMAOM_ph.jpeg", width = 4, height = 3)
 
-data %>%
-  count(Type.x,years.since.till)
 
-data %>%
-  count(Type.x,animal)
+#for active_carbon
+pred_active_carbon <- ggpredict(m1, terms = c("active_carbon"))
+mgMAOM_active_carbon <-data %>% 
+  ggplot() +
+  geom_point(aes(x = active_carbon, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_active_carbon, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("active_carbon"),
+                     label = scales::comma) 
+mgMAOM_active_carbon
+ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
 
-data %>%
-  count(Type.x,animal)
+#analyze data by field type. group by and color by field type this code is in progress
 
-data %>%
-  count(Type.x,till.passes)
+pred_active_carbon <- ggpredict(m1, terms = c("active_carbon"))
+mgMAOM_active_carbon <-data %>% 
+  ggplot() +
+  geom_point(aes(x = active_carbon, y = mgCpergSoilM), 
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_active_carbon, mapping = aes(x=x, y=predicted) 
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("active_carbon"),
+                     label = scales::comma) 
+mgMAOM_active_carbon
+ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
 
-data %>%
-  count(Type.x,till.depth)
 
-data %>%
-  count(Type.x,plastic.mulch)
-data %>%
-  count(Type.x,herbicides)
-data %>%
-  count(Type.x,insecticides)
-data %>%
-  count(Type.x,treated.seed)
-data %>%
-  count(Type.x,organic)
-data %>%
-  count(Type.x,Pattern.Drainage.Tile)
-data %>%
-  count(Type.x,irrigation)
-
-data %>%
-  count(Type.y,irrigation)
-
-#summarize the data in a new dataframe
-
-data.stats <- data %>% 
-  group_by(Type.x) %>%
-  summarize (n=n(),
-            mean=mean(years.since.till, na.rm = TRUE), 
-            min=min(years.since.till, na.rm = TRUE), 
-            max=max(years.since.till, na.rm = TRUE), 
-            sd=sd(years.since.till, na.rm = TRUE),
-            mean=mean(years.since.till, na.rm = TRUE), 
-  min=min(years.since.till, na.rm = TRUE), 
-  max=max(years.since.till, na.rm = TRUE), 
-  sd=sd(years.since.till, na.rm = TRUE))
-
-# subset to get annual ppt only
-PRISMannual <- subset(PRISM,Date=="Annual") 
-
-#data exploration graphs
-
-ggplot(data,aes(x=count till.passes, y=till.passes, color=Type.x)) + geom_point ()
-
-ggplot(data,aes(x=Type.x, y=till.passes, color=Type.x)) + geom_bar ()
-
-ggplot(data,aes(x=Type.x, y=till.depth, color=Type.x)) + geom_point ()
-
-ggplot (PRISMannual, aes (x=ppt..inches.))+
-  geom_histogram()
-
-max()
-
-ggplot(PRISMannual,aes(x=Name, y=ppt..inches, color=Name))+ geom_point ()
-
-ggplot(data,aes(x=ppt..inches., y=mgCpergSoilP,color=ppt..inches.))+ geom_point ()
-ggplot(data,aes(x=tmean..degrees.F., y=mgCpergSoilP,color=tmean..degrees.F.))+ geom_point ()
