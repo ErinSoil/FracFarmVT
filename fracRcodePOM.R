@@ -221,44 +221,10 @@ own_theme <- theme_bw(base_size = 11) +
         axis.line = element_line(color = "black"),
         panel.grid.minor = element_blank())
 
-#ppt and tmeanC
-pred_ppt <- ggpredict(m1P, terms = c("ppt.cm"))
-mgPOM_ppt <-data %>% 
-  ggplot() +
-  geom_point(aes(x = ppt.cm, y = mgCpergSoilP), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_ppt, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in POM per g soil"))+
-  scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
-                     label = scales::comma) 
-mgPOM_ppt
-ggsave("mgPOM_ppt.jpeg", width = 4, height = 3)
-
-#tmeanC
-
-pred_tmeanC <- ggpredict(m1P, terms = c("tmeanC"))
-
-POM_tmeanC <-data %>% 
-  ggplot() +
-  geom_point(aes(x = tmeanC, y = mgCpergSoilP), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_tmeanC, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in POM per g soil"))+
-  scale_x_continuous(expression("Mean Annual Temperature (C)"),
-                     label = scales::comma) 
-
-POM_tmeanC
-
-ggsave("POM_tmeanC.jpeg", width = 4, height = 3)
 
 
-#ppt and tmeanC  #is this right?
+
+#ppt and tmeanC  # good try, but no. 
 summary(data$ppt.cm)
 summary(data$tmeanC)
 pred_pptC <- ggpredict(m1P, terms = c("ppt.cm", "factor(tmeanC[5,8])"))
@@ -284,30 +250,65 @@ ggsave("mgPOM_ppt_tmeanC.jpeg", width = 4, height = 3)
 
 
 
-# Assuming the tmeanC variable has two levels
+# Assuming the tmeanC variable has two levels #this works, but the line is red and the labels need to be added for the 2 levels of tmeanC
 # Convert tmeanC to factor
-#pred_tmeanC <- ggpredict(m1P, terms = c("tmeanC","factor(ppt.cm[95,115])"))
+
+data <- data %>%
+  mutate(group = cut(tmeanC, breaks = c(-10,6.5,25)))
+pred_pptC <- ggpredict(m1P, terms = c("ppt.cm", "factor(tmeanC[5,8])"))
 
 mgPOM_pptC <- data %>% 
   ggplot() +
   geom_point(aes(x = ppt.cm, y = mgCpergSoilP), # plot your data
              size = 1.5, alpha = 0.5) +
-  geom_line(data = pred_df, # use the converted predicted values data frame
-            aes(x = x, y = predicted, color = factor(tmeanC)), # color by tmeanC levels
-            lwd = 1) +
+  geom_line(data = pred_pptC, # use the converted predicted values data frame
+                aes(x = x, y = predicted, color = group), # color by tmeanC levels
+                lwd = 1) +
   own_theme + # assuming you have your own theme defined
   theme(legend.position = "none") +
   scale_y_continuous(expression("mg C in POM per g soil")) +
   scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
                      label = scales::comma) +
   scale_color_manual(values = c("blue", "red")) # adjust colors if needed
-
 mgPOM_pptC
+
+
+#trying this code  #this doesn't work
+data <- as.data.frame(data)
+if (!is.data.frame(data)) {
+  stop("Data must be a data frame.")
+}
+
 ggsave("mgPOM_ppt_tmeanC.jpeg", width = 4, height = 3)
+
+
+#trying code #dataframe error
+data <- data %>%
+  mutate(group = cut(tmeanC, breaks = c(-10,6.5,25), labels=c(5,8)))
+         pred_pptC <- ggpredict(m1P, terms = c("ppt.cm", "factor(tmeanC[5,8])"))
+         mgPOM_pptC <- data %>% 
+           ggplot() +
+           geom_point(aes(x = ppt.cm, y = mgCpergSoilP), # plot your data
+                      size = 1.5, alpha = 0.5) +
+           geom_line(data = pred_pptC$predicted, # use the converted predicted values data frame
+                     aes(x = x, y = predicted, color = factor(group, levels = c(5, 8))), # color by tmeanC levels
+                     lwd = 1) +
+           
+                       own_theme + # remember to define/run own theme first
+                       theme(legend.position = "none") +  #I think we take this out because we do want a legend of colors
+                       scale_y_continuous(expression("mg C in POM per g soil")) +
+                       scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
+                                          label = scales::comma) +
+                       scale_color_manual(values = c("blue", "red")) # adjust colors if needed
+                     mgPOM_pptC
+                     
+
+    #Do I run the above code again for tmeanC at different levels of ppt?     
+                     
+#pred_tmeanC <- ggpredict(m1P, terms = c("tmeanC","factor(ppt.cm[95,115])"))
 
 #for agg stability 
 pred_aggregate_stability <- ggpredict(m1P, terms = c("aggregate_stability"))
-
 mgPOM_aggregate_stability <-data %>% 
   ggplot() +
   geom_point(aes(x = aggregate_stability, y = mgCpergSoilP), #plot your data
@@ -324,10 +325,11 @@ mgPOM_aggregate_stability
 
 ggsave("mgPOM_aggregate_stability.jpeg", width = 4, height = 3)
 
-
+summary(pred_pptC)
+str(pred_pptC)
 #analyze by field type 
 
-#Plot by field type: Box Plot
+#Plot by field type: Box Plot  #this works!
 view(data)
 
   mgPOMbyFieldType <- ggplot(data, aes(x=Type.x, y=mgCpergSoilP)) + 
