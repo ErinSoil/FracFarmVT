@@ -261,8 +261,8 @@ ggsave("POM_tmeanC.jpeg", width = 4, height = 3)
 #ppt and tmeanC  #is this right?
 summary(data$ppt.cm)
 summary(data$tmeanC)
-pred_pptC <- ggpredict(m1P, terms = c("ppt.cm", "tmeanC[5,8]"))
-pred_tmeanC <- ggpredict(m1P, terms = c("tmeanC","ppt.cm[95,115]"))
+pred_pptC <- ggpredict(m1P, terms = c("ppt.cm", "factor(tmeanC[5,8])"))
+pred_tmeanC <- ggpredict(m1P, terms = c("tmeanC","factor(ppt.cm[95,115])"))
 
 mgPOM_pptC <-data %>% 
   ggplot() +
@@ -272,14 +272,38 @@ mgPOM_pptC <-data %>%
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in POM per g soil"))+
-  scale_x_continuous(expression("Mean Annual Precipitation (cm) and Temp (C)"),
-                     label = scales::comma) 
+  scale_y_continuous(expression("mg C in POM per g soil")) +
+  scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
+                     label = scales::comma) +
+  scale_color_manual(values = c("blue", "red")) # adjust colors if needed
 
 mgPOM_pptC
 
 ggsave("mgPOM_ppt_tmeanC.jpeg", width = 4, height = 3)
 
+
+
+
+# Assuming the tmeanC variable has two levels
+# Convert tmeanC to factor
+#pred_tmeanC <- ggpredict(m1P, terms = c("tmeanC","factor(ppt.cm[95,115])"))
+
+mgPOM_pptC <- data %>% 
+  ggplot() +
+  geom_point(aes(x = ppt.cm, y = mgCpergSoilP), # plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(data = pred_df, # use the converted predicted values data frame
+            aes(x = x, y = predicted, color = factor(tmeanC)), # color by tmeanC levels
+            lwd = 1) +
+  own_theme + # assuming you have your own theme defined
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in POM per g soil")) +
+  scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
+                     label = scales::comma) +
+  scale_color_manual(values = c("blue", "red")) # adjust colors if needed
+
+mgPOM_pptC
+ggsave("mgPOM_ppt_tmeanC.jpeg", width = 4, height = 3)
 
 #for agg stability 
 pred_aggregate_stability <- ggpredict(m1P, terms = c("aggregate_stability"))
@@ -301,76 +325,14 @@ mgPOM_aggregate_stability
 ggsave("mgPOM_aggregate_stability.jpeg", width = 4, height = 3)
 
 
-#for active carbon 
-pred_active_carbon <- ggpredict(m1P, terms = c("active_carbon"))
+#analyze by field type 
 
-mgPOM_active_carbon <-data %>% 
-  ggplot() +
-  geom_point(aes(x = active_carbon, y = mgCpergSoilP), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_active_carbon, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in POM per g soil"))+
-  scale_x_continuous(expression("active carbon"),
-                     label = scales::comma) 
+#Plot by field type: Box Plot
+view(data)
 
-mgPOM_active_carbon
-
-ggsave("mgPOM_active_carbon.jpeg", width = 4, height = 3)
-
-
-#for clay 
-pred_soil_texture_clay <- ggpredict(m1P, terms = c("soil_texture_clay"))
-
-mgPOM_soil_texture_clay <-data %>% 
-  ggplot() +
-  geom_point(aes(x = soil_texture_clay, y = mgCpergSoilP), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_soil_texture_clay, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in POM per g soil"))+
-  scale_x_continuous(expression("clay"),
-                     label = scales::comma) 
-
-mgPOM_soil_texture_clay
-
-ggsave("mgPOM_soil_texture_clay.jpeg", width = 4, height = 3)
-
-
-#for ph
-pred_ph <- ggpredict(m1P, terms = c("ph"))
-mgPOM_ph <-data %>% 
-  ggplot() +
-  geom_point(aes(x = ph, y = mgCpergSoilP), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_ph, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in POM per g soil"))+
-  scale_x_continuous(expression("ph"),
-                     label = scales::comma) 
-mgPOM_ph
-ggsave("mgPOM_ph.jpeg", width = 4, height = 3)
-
-#analyze by field type #this is code still in progress
-pred_active_carbon <- ggpredict(m1P, terms = c("active_carbon"))
-mgMAOM_active_carbon <-data %>% 
-  ggplot() +
-  geom_point(aes(x = active_carbon, y = mgCpergSoilM), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_active_carbon, mapping = aes(x=x, y=predicted),color="Type.x",
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
-  scale_x_continuous(expression("active_carbon"),
-                     label = scales::comma) 
-mgMAOM_active_carbon
-ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
+  mgPOMbyFieldType <- ggplot(data, aes(x=Type.x, y=mgCpergSoilP)) + 
+  geom_boxplot()
+mgPOMbyFieldType
+  
 
 

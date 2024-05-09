@@ -152,7 +152,7 @@ data <- data %>%
 #Correlation plot
 cordata <- cor(data[,c("mgCpergSoilM","ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
 corrplot(cordata)
-  
+  view(cordata)
 ##Linear Mixed Model for dependent variable (mgCpergSoilM)
 
 #test without random effect, because only one value per field
@@ -162,6 +162,16 @@ m1=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
       ph, data=data, na.action=na.exclude, method="ML")
 summary(m1)
 anova(m1)
+
+#new mb test
+
+
+mb=gls(mgCpergSoilM~ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
+         ph+ppt.cm*soil_texture_clay+
+         soil_texture_clay*tmeanC, data=data, na.action=na.exclude, method="ML")
+summary(mb)
+anova(mb)
+
 
 #anova for different field types 
 
@@ -298,26 +308,6 @@ mgMAOM_aggregate_stability
 ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)
 
 
-#tmeanC
-pred_pptC <- ggpredict(m1, terms = c("tmeanC"))
-
-mgMAOM_pptC <-data %>% 
-  ggplot() +
-  geom_point(aes(x = tmeanC, y = mgCpergSoilM), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_pptC, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
-  scale_x_continuous(expression("Mean Annual Temp (C)"),
-                     label = scales::comma) 
-
-mgMAOM_tmeanC
-ggsave("mgMAOM_tmeanC.jpeg", width = 4, height = 3)
-
-
-
 #ppt
 pred_ppt <- ggpredict(m1, terms = c("ppt.cm"))
 mgMAOM_ppt <-data %>% 
@@ -351,22 +341,6 @@ mgMAOM_soil_texture_clay <-data %>%
 mgMAOM_soil_texture_clay
 ggsave("mgMAOM_soil_texture_clay.jpeg", width = 4, height = 3)
 
-#ph
-pred_ph <- ggpredict(m1, terms = c("ph"))
-mgMAOM_ph <-data %>% 
-  ggplot() +
-  geom_point(aes(x = ph, y = mgCpergSoilM), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_ph, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
-  scale_x_continuous(expression("ph"),
-                     label = scales::comma) 
-mgMAOM_ph
-ggsave("mgMAOM_ph.jpeg", width = 4, height = 3)
-
 
 #for active_carbon
 pred_active_carbon <- ggpredict(m1, terms = c("active_carbon"))
@@ -385,20 +359,18 @@ mgMAOM_active_carbon
 ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
 
 #analyze data by field type. group by and color by field type this code is in progress
-
-pred_active_carbon <- ggpredict(m1, terms = c("active_carbon"))
-mgMAOM_active_carbon <-data %>% 
+#exploration
+mgMAOM_active_carbonbyField <-data %>% 
   ggplot() +
-  geom_point(aes(x = active_carbon, y = mgCpergSoilM), 
+  geom_point(aes(x = active_carbon, y = mgCpergSoilM, color=Type.x), 
              size = 1.5, alpha = 0.5) +
-  geom_line(pred_active_carbon, mapping = aes(x=x, y=predicted) 
-            lwd = 1) +
+  #geom_smooth() +
   own_theme+
-  theme(legend.position = "none") +
+  #theme(legend.position = "none") +
   scale_y_continuous(expression("mg C in MAOM per g soil"))+
   scale_x_continuous(expression("active_carbon"),
                      label = scales::comma) 
-mgMAOM_active_carbon
-ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
+mgMAOM_active_carbonbyField
+ggsave("mgMAOM_active_carbonbyField.jpeg", width = 4, height = 3)
 
 
