@@ -154,12 +154,23 @@ summary(mdM)
 anova(mdM)
 
 #minus agg stability
-mbM=gls(propM~ppt.cm+soil_texture_clay+
+meM=gls(propM~ppt.cm+soil_texture_clay+
           tmeanC+ph+active_carbon, data=data, na.action=na.exclude, method="ML")
-summary(mbM)
-anova(mbM)
+summary(meM)
+anova(meM)
 
+#minus active carbon
+meM=gls(propM~ppt.cm+soil_texture_clay+
+          tmeanC+ph+aggregate_stability, data=data, na.action=na.exclude, method="ML")
+summary(meM)
+anova(meM)
 
+#minus temp
+mfM=gls(propM~ppt.cm+soil_texture_clay+
+          aggregate_stability+active_carbon+ 
+          ph, data=data, na.action=na.exclude, method="ML")
+summary(mfM)
+anova(mfM)
 
 #anova for different field types 
 
@@ -172,62 +183,54 @@ mType=aov(propM~Type.x, data=data, na.action=na.exclude)
 summary(mType)
 TukeyHSD(mType)
 
-#box plot
 
-#check if variance structure improves the model, it does not (to test, both methods were set to REML)
-m1a=gls(propM~ppt.cm*soil_texture_clay+
-          soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
-          ph, data=data, na.action=na.exclude, weights = varFixed(~propM), method="REML")
-anova(m1, m1a) #adding variance structure does not improve the model
+#check if variance structure improves the model, (to test, both methods were set to REML)
+m1aM=gls(propM~ppt.cm+soil_texture_clay+
+          tmeanC+aggregate_stability+active_carbon+ 
+          ph, data=data, na.action=na.exclude, weights = varFixed(~propM), method="ML")
+anova(m1M, m1aM) #adding variance structure does not improve the model
 
-m2=gls(propM~ppt.cm*soil_texture_clay+
-         soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon,
+m2M=gls(propM~ppt.cm+soil_texture_clay+
+         tmeanC+aggregate_stability+active_carbon+ 
+         ph, data=data, na.action=na.exclude, method="ML")
+
+anova(m1M,m2M)
+anova(m2M)
+
+m3M=gls(propM~ppt.cm+soil_texture_clay+
+         tmeanC+aggregate_stability+active_carbon,
        data=data, na.action=na.exclude, method="ML")
 
-anova(m1,m2)
-anova(m2)
+anova(m2M,m3M)
+anova(m3M)
 
-m3=gls(propM~ppt.cm+
-         soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+
+m4M=gls(propM~ppt.cm*soil_texture_clay+
+         tmeanC+aggregate_stability*
          active_carbon,
        data=data, na.action=na.exclude, method="ML")
+anova(m3M,m4M)
+anova(m4M)
 
-anova(m2,m3)
-anova(m3)
-
-m4=gls(propM~ppt.cm+soil_texture_clay+
-         tmeanC+aggregate_stability+
-         active_carbon,
-       data=data, na.action=na.exclude, method="ML")
-
-anova(m3,m4)
-anova(m4)
-
-m5=gls(propM~ppt.cm+soil_texture_clay+
+m5M=gls(propM~ppt.cm+soil_texture_clay+
          aggregate_stability+
          active_carbon,
        data=data, na.action=na.exclude, method="ML")
 
-anova(m4,m5)
-anova(m5)
+anova(m4M,m5M)
+anova(m5M)
 
 #above is if you want to drop non significant predictors until all are significant as model selection, but there is really no need. 
 #I would stick with model 1
 
 #check assumptions, distrubution of residuals
 
-m1=gls(propM~ppt.cm*soil_texture_clay+
-         soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
-         ph, data=data, na.action=na.exclude, method="REML")
-summary(m1)
-anova(m1)
 
-F_Final <- fitted(m1)
-R_Final <- residuals(m1, type = "pearson", scaled = TRUE)
+F_Final <- fitted(m1M)
+R_Final <- residuals(m1M, type = "pearson", scaled = TRUE)
 N = !is.na(data$propM)
 Rfull <- NA
 Rfull[N] <- R_Final
-op <- par(mfrow = c(2,2), mar = c(5,4,1,1))  #I can't figure this part out
+op <- par(mfrow = c(2,2), mar = c(5,4,1,1))  
 plot(F_Final, R_Final)
 hist(Rfull)
 plot(Rfull ~ data$aggregate_stability)
@@ -243,25 +246,25 @@ par(op)
 
 op <- par(mfrow = c(2,2), mar = c(5,4,1,1)) #this makes it so all the graphs are plotted in the same window (a 2 x 2 grid)
 
-ppt.cm.c <- summary(m1)$coefficients[2] #predictor coefficient
+ppt.cm.c <- summary(m1M)$coefficients[2] #predictor coefficient
 ppt.cm.pr <- Rfull + ppt.cm.c*data$ppt.cm  #Residuals + pred coef * predictor value
 {scatter.smooth(data$ppt.cm, ppt.cm.pr, 
                 lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
   abline(lm(ppt.cm.c*data$ppt.cm ~ data$ppt.cm), col = "red")} 
 
-soil_texture_clay.c <- summary(m1)$coefficients[3] #predictor coefficient
+soil_texture_clay.c <- summary(m1M)$coefficients[3] #predictor coefficient
 soil_texture_clay.pr <- Rfull + soil_texture_clay.c*data$soil_texture_clay  #Residuals + pred coef * predictor value
 {scatter.smooth(data$soil_texture_clay, soil_texture_clay.pr, 
                 lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
   abline(lm(soil_texture_clay.c*data$soil_texture_clay ~ data$soil_texture_clay), col = "red")} 
 
-aggregate_stability.c <- summary(m1)$coefficients[5] #predictor coefficient
+aggregate_stability.c <- summary(m1M)$coefficients[5] #predictor coefficient
 aggregate_stability.pr <- Rfull + aggregate_stability.c*data$aggregate_stability  #Residuals + pred coef * predictor value
 {scatter.smooth(data$aggregate_stability, aggregate_stability.pr, 
                 lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
   abline(lm(aggregate_stability.c*data$aggregate_stability ~ data$aggregate_stability), col = "red")} 
 
-active_carbon.c <- summary(m1)$coefficients[6] #predictor coefficient
+active_carbon.c <- summary(m1M)$coefficients[6] #predictor coefficient
 active_carbon.pr <- Rfull + active_carbon.c*data$active_carbon  #Residuals + pred coef * predictor value
 {scatter.smooth(data$active_carbon, active_carbon.pr, 
                 lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
@@ -280,8 +283,8 @@ own_theme <- theme_bw(base_size = 11) +
         panel.grid.minor = element_blank())
 
 #for aggregate stability
-pred_aggregate_stability <- ggpredict(m1, terms = c("aggregate_stability"))
-mgMAOM_aggregate_stability <-data %>% 
+pred_aggregate_stability <- ggpredict(m1M, terms = c("aggregate_stability"))
+propMAOM_aggregate_stability <-data %>% 
   ggplot() +
   geom_point(aes(x = aggregate_stability, y = propM), #plot your data
              size = 1.5, alpha = 0.5) +
@@ -289,16 +292,16 @@ mgMAOM_aggregate_stability <-data %>%
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_y_continuous(expression("prop C in MAOM"))+
   scale_x_continuous(expression("aggregate_stability"),
                      label = scales::comma) 
-mgMAOM_aggregate_stability
-ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)
+propMAOM_aggregate_stability
+ggsave("propMAOM_aggregate_stability.jpeg", width = 4, height = 3)
 
 
 #ppt
-pred_ppt <- ggpredict(m1, terms = c("ppt.cm"))
-mgMAOM_ppt <-data %>% 
+pred_ppt <- ggpredict(m1M, terms = c("ppt.cm"))
+propMAOM_ppt <-data %>% 
   ggplot() +
   geom_point(aes(x = ppt.cm, y = propM), #plot your data
              size = 1.5, alpha = 0.5) +
@@ -306,16 +309,16 @@ mgMAOM_ppt <-data %>%
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_y_continuous(expression("prop C in MAOM"))+
   scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
                      label = scales::comma) 
-mgMAOM_ppt
-ggsave("mgMAOM_ppt.jpeg", width = 4, height = 3)
+propMAOM_ppt
+ggsave("propMAOM_ppt.jpeg", width = 4, height = 3)
 
 
 #for clay # not sig different from zero, a little negative
-pred_soil_texture_clay <- ggpredict(m1, terms = c("soil_texture_clay"))
-mgMAOM_soil_texture_clay <-data %>% 
+pred_soil_texture_clay <- ggpredict(m1M, terms = c("soil_texture_clay"))
+propMAOM_soil_texture_clay <-data %>% 
   ggplot() +
   geom_point(aes(x = soil_texture_clay, y = propM), #plot your data
              size = 1.5, alpha = 0.5) +
@@ -323,16 +326,16 @@ mgMAOM_soil_texture_clay <-data %>%
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_y_continuous(expression("prop C in MAOM"))+
   scale_x_continuous(expression("clay"),
                      label = scales::comma) 
-mgMAOM_soil_texture_clay
-ggsave("mgMAOM_soil_texture_clay.jpeg", width = 4, height = 3)
+propMAOM_soil_texture_clay
+ggsave("propMAOM_soil_texture_clay.jpeg", width = 4, height = 3)
 
 
 #for active_carbon
-pred_active_carbon <- ggpredict(m1, terms = c("active_carbon"))
-mgMAOM_active_carbon <-data %>% 
+pred_active_carbon <- ggpredict(m1M, terms = c("active_carbon"))
+propMAOM_active_carbon <-data %>% 
   ggplot() +
   geom_point(aes(x = active_carbon, y = propM), #plot your data
              size = 1.5, alpha = 0.5) +
@@ -340,25 +343,48 @@ mgMAOM_active_carbon <-data %>%
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_y_continuous(expression("prop C in MAOM"))+
   scale_x_continuous(expression("active_carbon"),
                      label = scales::comma) 
-mgMAOM_active_carbon
-ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
+propMAOM_active_carbon
+ggsave("propMAOM_active_carbon.jpeg", width = 4, height = 3)
+
+
+#for tmeanC
+pred_tmeanC <- ggpredict(m1M, terms = c("tmeanC"))
+propMAOM_tmeanC <-data %>% 
+  ggplot() +
+  geom_point(aes(x = tmeanC, y = propM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_tmeanC, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("prop C in MAOM"))+
+  scale_x_continuous(expression("active_carbon"),
+                     label = scales::comma) 
+propMAOM_tmeanC
+ggsave("propMAOM_active_carbon.jpeg", width = 4, height = 3)
+
 
 #analyze data by field type. group by and color by field type this code is in progress
 #exploration
-mgMAOM_active_carbonbyField <-data %>% 
+propMAOM_active_carbonbyField <-data %>% 
   ggplot() +
   geom_point(aes(x = active_carbon, y = propM, color=Type.x), 
              size = 1.5, alpha = 0.5) +
   #geom_smooth() +
   own_theme+
   #theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_y_continuous(expression("prop C in MAOM"))+
   scale_x_continuous(expression("active_carbon"),
                      label = scales::comma) 
-mgMAOM_active_carbonbyField
-ggsave("mgMAOM_active_carbonbyField.jpeg", width = 4, height = 3)
+propMAOM_active_carbonbyField
+ggsave("propMAOM_active_carbonbyField.jpeg", width = 4, height = 3)
 
+#box plot
+
+propMAOMbyFieldType <- ggplot(data, aes(x=Type.x, y=propM)) + 
+  geom_boxplot()
+propMAOMbyFieldType
 
