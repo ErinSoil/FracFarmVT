@@ -34,36 +34,32 @@ data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
 #First, graphically explore relationships among variables
 #look for interactions between independent variables
 
+#interactions with clay
 View (data)
 data <- data %>% 
   mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
 
-ggplot(data=data, aes(x=tmeanC, y=mgCpergSoilM, col=soil_texture_clay))+ 
+ggplot(data=data, aes(x=tmeanC, y=propM, col=soil_texture_clay))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ claycategory, ncol=1, scales="free_x")
 
-data <- data %>% 
-  mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
-
-ggplot(data=data, aes(x=ppt.cm, y=mgCpergSoilM, col=soil_texture_clay))+ 
+ggplot(data=data, aes(x=ppt.cm, y=propM, col=soil_texture_clay))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ claycategory, ncol=1, scales="free_x")
 
-#more interactions with ph
+#interactions with ph
 data <- data %>% 
   mutate(phcategory=cut(ph, breaks=c(-Inf,6.17, 6.52, 6.93, Inf), labels=c("low","med","high", "veryhigh")))
 
-ggplot(data=data, aes(x=tmeanC, y=mgCpergSoilM, col=ph))+ 
+ggplot(data=data, aes(x=tmeanC, y=propM, col=ph))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ phcategory, ncol=1, scales="free_x")
 
-data <- data %>% 
-  mutate(phcategory=cut(ph, breaks=c(-Inf,6.17, 6.52, 6.93, Inf), labels=c("low","med","high", "veryhigh")))
 
-ggplot(data=data, aes(x=ppt.cm, y=mgCpergSoilM, col=ph))+ 
+ggplot(data=data, aes(x=ppt.cm, y=propM, col=ph))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ phcategory, ncol=1, scales="free_x")
@@ -72,33 +68,25 @@ ggplot(data=data, aes(x=ppt.cm, y=mgCpergSoilM, col=ph))+
 data <- data %>% 
   mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 106.4, 110.0, Inf), labels=c("low","med","high", "veryhigh")))
 
-ggplot(data=data, aes(x=tmeanC, y=mgCpergSoilM, col=ppt.cm))+ 
+ggplot(data=data, aes(x=tmeanC, y=propM, col=ppt.cm))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ pptcategory, ncol=1, scales="free_x")
 
 
-data <- data %>% 
-  mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 106.4, 110.0, Inf), labels=c("low","med","high", "veryhigh")))
-
-ggplot(data=data, aes(x=aggregate_stability, y=mgCpergSoilM, col=ppt.cm))+ 
+ggplot(data=data, aes(x=aggregate_stability, y=propM, col=ppt.cm))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ pptcategory, ncol=1, scales="free_x")
 
 
-data <- data %>% 
-  mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 106.4, 110.0, Inf), labels=c("low","med","high", "veryhigh")))
-
-ggplot(data=data, aes(x=ph, y=mgCpergSoilM, col=ppt.cm))+ 
+ggplot(data=data, aes(x=ph, y=propM, col=ppt.cm))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ pptcategory, ncol=1, scales="free_x")
 
-data <- data %>% 
-  mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 106.4, 110.0, Inf), labels=c("low","med","high", "veryhigh")))
 
-ggplot(data=data, aes(x=active.carbon, y=mgCpergSoilM, col=ppt.cm))+ 
+ggplot(data=data, aes(x=active_carbon, y=propM, col=ppt.cm))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ pptcategory, ncol=1, scales="free_x")
@@ -109,55 +97,45 @@ summary(data$aggregate_stability)
 data <- data %>% 
   mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.8, 46.7, 63.7, Inf), labels=c("low","med","high", "veryhigh")))
 
-ggplot(data=data, aes(x=ph, y=mgCpergSoilM, col=aggregate_stability))+ 
+ggplot(data=data, aes(x=ph, y=propM, col=aggregate_stability))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ agStcategory, ncol=1, scales="free_x")
 
 
-data <- data %>% 
-  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.8, 46.7, 63.7, Inf), labels=c("low","med","high", "veryhigh")))
-
-ggplot(data=data, aes(x=ppt.cm, y=mgCpergSoilM, col=aggregate_stability))+ 
+ggplot(data=data, aes(x=ppt.cm, y=propM, col=aggregate_stability))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ agStcategory, ncol=1, scales="free_x")
 
-data <- data %>% 
-  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.8, 46.7, 63.7, Inf), labels=c("low","med","high", "veryhigh")))
-
-ggplot(data=data, aes(x=tmeanC, y=mgCpergSoilM, col=aggregate_stability))+ 
-  geom_point()+
-  geom_smooth(method=lm)+
-  facet_wrap(~ agStcategory, ncol=1, scales="free_x")
-
-data <- data %>% 
-  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.8, 46.7, 63.7, Inf), labels=c("low","med","high", "veryhigh")))
-
-ggplot(data=data, aes(x=soil_texture_clay, y=mgCpergSoilM, col=aggregate_stability))+ 
+ggplot(data=data, aes(x=tmeanC, y=propM, col=aggregate_stability))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ agStcategory, ncol=1, scales="free_x")
 
 
-data <- data %>% 
-  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.8, 46.7, 63.7, Inf), labels=c("low","med","high", "veryhigh")))
-
-ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilM, col=aggregate_stability))+ 
+ggplot(data=data, aes(x=soil_texture_clay, y=propM, col=aggregate_stability))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ agStcategory, ncol=1, scales="free_x")
+
+ggplot(data=data, aes(x=active_carbon, y=propM, col=aggregate_stability))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ agStcategory, ncol=1, scales="free_x")
+
+##start here again
 
 #Models
 #Correlation plot
-cordata <- cor(data[,c("mgCpergSoilM","ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
+cordata <- cor(data[,c("propM","ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
 corrplot(cordata)
 view(cordata)
-##Linear Mixed Model for dependent variable (mgCpergSoilM)
+##Linear Mixed Model for dependent variable (propM)
 
 #test without random effect, because only one value per field
 
-m1=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
+m1=gls(propM~ppt.cm*soil_texture_clay+
          soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
          ph, data=data, na.action=na.exclude, method="ML")
 summary(m1)
@@ -166,7 +144,7 @@ anova(m1)
 #new mb test
 
 
-mb=gls(mgCpergSoilM~ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
+mb=gls(propM~ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
          ph+ppt.cm*soil_texture_clay+
          soil_texture_clay*tmeanC, data=data, na.action=na.exclude, method="ML")
 summary(mb)
@@ -180,26 +158,26 @@ summary(mType)
 TukeyHSD(mType)
 
 
-mType=aov(mgperSoilM~Type.x, data=data, na.action=na.exclude) 
+mType=aov(propM~Type.x, data=data, na.action=na.exclude) 
 summary(mType)
 TukeyHSD(mType)
 
 #box plot
 
 #check if variance structure improves the model, it does not (to test, both methods were set to REML)
-m1a=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
+m1a=gls(propM~ppt.cm*soil_texture_clay+
           soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
-          ph, data=data, na.action=na.exclude, weights = varFixed(~mgCpergSoilM), method="REML")
+          ph, data=data, na.action=na.exclude, weights = varFixed(~propM), method="REML")
 anova(m1, m1a) #adding variance structure does not improve the model
 
-m2=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
+m2=gls(propM~ppt.cm*soil_texture_clay+
          soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon,
        data=data, na.action=na.exclude, method="ML")
 
 anova(m1,m2)
 anova(m2)
 
-m3=gls(mgCpergSoilM~ppt.cm+
+m3=gls(propM~ppt.cm+
          soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+
          active_carbon,
        data=data, na.action=na.exclude, method="ML")
@@ -207,7 +185,7 @@ m3=gls(mgCpergSoilM~ppt.cm+
 anova(m2,m3)
 anova(m3)
 
-m4=gls(mgCpergSoilM~ppt.cm+soil_texture_clay+
+m4=gls(propM~ppt.cm+soil_texture_clay+
          tmeanC+aggregate_stability+
          active_carbon,
        data=data, na.action=na.exclude, method="ML")
@@ -215,7 +193,7 @@ m4=gls(mgCpergSoilM~ppt.cm+soil_texture_clay+
 anova(m3,m4)
 anova(m4)
 
-m5=gls(mgCpergSoilM~ppt.cm+soil_texture_clay+
+m5=gls(propM~ppt.cm+soil_texture_clay+
          aggregate_stability+
          active_carbon,
        data=data, na.action=na.exclude, method="ML")
@@ -228,7 +206,7 @@ anova(m5)
 
 #check assumptions, distrubution of residuals
 
-m1=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
+m1=gls(propM~ppt.cm*soil_texture_clay+
          soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
          ph, data=data, na.action=na.exclude, method="REML")
 summary(m1)
@@ -236,7 +214,7 @@ anova(m1)
 
 F_Final <- fitted(m1)
 R_Final <- residuals(m1, type = "pearson", scaled = TRUE)
-N = !is.na(data$mgCpergSoilM)
+N = !is.na(data$propM)
 Rfull <- NA
 Rfull[N] <- R_Final
 op <- par(mfrow = c(2,2), mar = c(5,4,1,1))  #I can't figure this part out
@@ -295,7 +273,7 @@ own_theme <- theme_bw(base_size = 11) +
 pred_aggregate_stability <- ggpredict(m1, terms = c("aggregate_stability"))
 mgMAOM_aggregate_stability <-data %>% 
   ggplot() +
-  geom_point(aes(x = aggregate_stability, y = mgCpergSoilM), #plot your data
+  geom_point(aes(x = aggregate_stability, y = propM), #plot your data
              size = 1.5, alpha = 0.5) +
   geom_line(pred_aggregate_stability, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
             lwd = 1) +
@@ -312,7 +290,7 @@ ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)
 pred_ppt <- ggpredict(m1, terms = c("ppt.cm"))
 mgMAOM_ppt <-data %>% 
   ggplot() +
-  geom_point(aes(x = ppt.cm, y = mgCpergSoilM), #plot your data
+  geom_point(aes(x = ppt.cm, y = propM), #plot your data
              size = 1.5, alpha = 0.5) +
   geom_line(pred_ppt, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
             lwd = 1) +
@@ -329,7 +307,7 @@ ggsave("mgMAOM_ppt.jpeg", width = 4, height = 3)
 pred_soil_texture_clay <- ggpredict(m1, terms = c("soil_texture_clay"))
 mgMAOM_soil_texture_clay <-data %>% 
   ggplot() +
-  geom_point(aes(x = soil_texture_clay, y = mgCpergSoilM), #plot your data
+  geom_point(aes(x = soil_texture_clay, y = propM), #plot your data
              size = 1.5, alpha = 0.5) +
   geom_line(pred_soil_texture_clay, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
             lwd = 1) +
@@ -346,7 +324,7 @@ ggsave("mgMAOM_soil_texture_clay.jpeg", width = 4, height = 3)
 pred_active_carbon <- ggpredict(m1, terms = c("active_carbon"))
 mgMAOM_active_carbon <-data %>% 
   ggplot() +
-  geom_point(aes(x = active_carbon, y = mgCpergSoilM), #plot your data
+  geom_point(aes(x = active_carbon, y = propM), #plot your data
              size = 1.5, alpha = 0.5) +
   geom_line(pred_active_carbon, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
             lwd = 1) +
@@ -362,7 +340,7 @@ ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
 #exploration
 mgMAOM_active_carbonbyField <-data %>% 
   ggplot() +
-  geom_point(aes(x = active_carbon, y = mgCpergSoilM, color=Type.x), 
+  geom_point(aes(x = active_carbon, y = propM, color=Type.x), 
              size = 1.5, alpha = 0.5) +
   #geom_smooth() +
   own_theme+
