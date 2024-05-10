@@ -36,8 +36,6 @@ data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
 
 #interactions with clay
 View (data)
-data <- data %>% 
-  mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
 
 ggplot(data=data, aes(x=tmeanC, y=propM, col=soil_texture_clay))+ 
   geom_point()+
@@ -124,31 +122,43 @@ ggplot(data=data, aes(x=active_carbon, y=propM, col=aggregate_stability))+
   geom_smooth(method=lm)+
   facet_wrap(~ agStcategory, ncol=1, scales="free_x")
 
-##start here again
 
-#Models
 #Correlation plot
 cordata <- cor(data[,c("propM","ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
 corrplot(cordata)
 view(cordata)
-##Linear Mixed Model for dependent variable (propM)
 
+##Linear Mixed Model for dependent variable (propM)
 #test without random effect, because only one value per field
 
-m1=gls(propM~ppt.cm*soil_texture_clay+
-         soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
+m1M=gls(propM~ppt.cm+soil_texture_clay+
+         tmeanC+aggregate_stability+active_carbon+ 
          ph, data=data, na.action=na.exclude, method="ML")
-summary(m1)
-anova(m1)
+summary(m1M)
+anova(m1M)
 
-#new mb test
+#new mb test, minus ph
+mbM=gls(propM~ppt.cm+soil_texture_clay+
+          tmeanC+aggregate_stability+active_carbon, data=data, na.action=na.exclude, method="ML")
+summary(mbM)
+anova(mbM)
+#minus clay
+mcM=gls(propM~ppt.cm+ph+
+          tmeanC+aggregate_stability+active_carbon, data=data, na.action=na.exclude, method="ML")
+summary(mcM)
+anova(mcM)
+#minus ppt
+mdM=gls(propM~ph+soil_texture_clay+
+          tmeanC+aggregate_stability+active_carbon, data=data, na.action=na.exclude, method="ML")
+summary(mdM)
+anova(mdM)
 
+#minus agg stability
+mbM=gls(propM~ppt.cm+soil_texture_clay+
+          tmeanC+ph+active_carbon, data=data, na.action=na.exclude, method="ML")
+summary(mbM)
+anova(mbM)
 
-mb=gls(propM~ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
-         ph+ppt.cm*soil_texture_clay+
-         soil_texture_clay*tmeanC, data=data, na.action=na.exclude, method="ML")
-summary(mb)
-anova(mb)
 
 
 #anova for different field types 
