@@ -388,3 +388,11 @@ propMAOMbyFieldType <- ggplot(data, aes(x=Type.x, y=propM)) +
   geom_boxplot()
 propMAOMbyFieldType
 
+#transform data logit
+library(MASS)
+data %>%
+logit_transformed <- logit(propM)
+
+# Log transformation
+log_transformed <- log(logit_transformed)
+
