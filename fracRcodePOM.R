@@ -1,7 +1,7 @@
 ##run linear models using POM as the Response Variable
 
-#setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
-setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
+setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
+#setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
 
 #load your libraries
 library(tidyverse)
@@ -110,47 +110,41 @@ corrplot(cordata)
 
 #test without random effect, because only one value per field
 
-m1P=gls(mgCpergSoilP~soil_texture_clay*ppt.cm+soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability*active_carbon+ 
+m1P=gls(mgCpergSoilP~soil_texture_clay*ppt.cm+soil_texture_clay*tmeanC+
+          ppt.cm*tmeanC+aggregate_stability*active_carbon+ 
          ph, data=data, na.action=na.exclude, method="ML")
 summary(m1P)
 anova(m1P)
 
 #Erin needs better understanding of this. Do we change REML to ML?  #check if variance structure improves the model, it does not (to test, both methods were set to REML) ##this doesn't work now
-m1a=gls(mgCpergSoilP~ppt.cm*soil_texture_clay+
-          soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
-          ph, data=data, na.action=na.exclude, weights = varFixed(~mgCpergSoilP), method="REML")
+m1a=gls(mgCpergSoilP~soil_texture_clay*ppt.cm+soil_texture_clay*tmeanC+
+          ppt.cm*tmeanC+aggregate_stability*active_carbon+ 
+          ph, data=data, na.action=na.exclude, weights = varFixed(~mgCpergSoilP), method="ML")
 anova(m1P, m1a) #adding variance structure does not improve the model
 
-m2=gls(mgCpergSoilP~ppt.cm*soil_texture_clay+
-         soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon,
-       data=data, na.action=na.exclude, method="ML")
+m2=gls(mgCpergSoilP~soil_texture_clay*ppt.cm+
+         ppt.cm*tmeanC+aggregate_stability*active_carbon+ 
+         ph, data=data, na.action=na.exclude, method="ML")
 
 anova(m1P,m2)
 anova(m2)
 
-m3=gls(mgCpergSoilP~ppt.cm+
-         soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+
-         active_carbon,
+m3=gls(mgCpergSoilP~ppt.cm*tmeanC+aggregate_stability*active_carbon+ph,
        data=data, na.action=na.exclude, method="ML")
 
 anova(m2,m3)
 anova(m3)
 
-m4=gls(mgCpergSoilP~ppt.cm+soil_texture_clay+
-         tmeanC+aggregate_stability+
-         active_carbon,
+m4=gls(mgCpergSoilP~ppt.cm*tmeanC+aggregate_stability*active_carbon,
        data=data, na.action=na.exclude, method="ML")
 
 anova(m3,m4)
 anova(m4)
 
-m5=gls(mgCpergSoilP~ppt.cm+soil_texture_clay+
-         aggregate_stability+
-         active_carbon,
+m5=gls(mgCpergSoilP~ppt.cm+tmeanC+aggregate_stability*active_carbon,
        data=data, na.action=na.exclude, method="ML")
 
-anova(m4,m5)
-anova(m5)
+anova(m4,m5) #m4 is best model if do model selection
 
 #above is if you want to drop non significant predictors until all are significant as model selection, but there is really no need. 
 #How to I assess these different model results??
@@ -158,8 +152,9 @@ anova(m5)
 #check assumptions, distrubution of residuals
 
 
-m1P=gls(mgCpergSoilP~soil_texture_clay*ppt.cm+soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability*active_carbon+ 
-         ph, data=data, na.action=na.exclude, method="ML")
+m1P=gls(mgCpergSoilP~soil_texture_clay*ppt.cm+soil_texture_clay*tmeanC+
+          ppt.cm*tmeanC+aggregate_stability*active_carbon+ 
+          ph, data=data, na.action=na.exclude, method="REML") #final model should use REML
 summary(m1P)
 anova(m1P)
 
@@ -221,23 +216,31 @@ own_theme <- theme_bw(base_size = 11) +
         axis.line = element_line(color = "black"),
         panel.grid.minor = element_blank())
 
-
-
-
-#ppt and tmeanC  # good try, but no. 
+#ppt and tmeanC, option 1
 summary(data$ppt.cm)
 summary(data$tmeanC)
-pred_pptC <- ggpredict(m1P, terms = c("ppt.cm", "factor(tmeanC[5,8])"))
-pred_tmeanC <- ggpredict(m1P, terms = c("tmeanC","factor(ppt.cm[95,115])"))
+
+pred_pptC <- ggpredict(m1P, terms = c("ppt.cm", "tmeanC[6.8,7.5]"))
+
+pred_pptC$tmean_group <- pred_pptC$group
+levels(pred_pptC$tmean_group) <- c("low (5-7.2)",  
+                                     "high (7.2-8.6)")
+
+data <- data %>%
+  drop_na(tmeanC) %>% 
+  mutate(tmean_group = cut(tmeanC, breaks = c(4.5,7.2,8.6)))
+
+levels(data$tmean_group) <- c("low (5-7.2)",  
+                                   "high (7.2-8.6)")
 
 mgPOM_pptC <-data %>% 
   ggplot() +
-  geom_point(aes(x = ppt.cm, y = mgCpergSoilP), #plot your data
+  geom_point(aes(x = ppt.cm, y = mgCpergSoilP, col = tmean_group), #plot your data
              size = 1.5, alpha = 0.5) +
-  geom_line(pred_pptC, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+  geom_line(pred_pptC, mapping = aes(x=x, y=predicted, col = tmean_group), #plot the model's prediction (based on linear )
             lwd = 1) +
   own_theme+
-  theme(legend.position = "none") +
+  #theme(legend.position = "none") +
   scale_y_continuous(expression("mg C in POM per g soil")) +
   scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
                      label = scales::comma) +
@@ -248,62 +251,41 @@ mgPOM_pptC
 ggsave("mgPOM_ppt_tmeanC.jpeg", width = 4, height = 3)
 
 
+#ppt and tmeanC, option 2
+summary(data$ppt.cm)
 
+pred_tmeanC <- ggpredict(m1P, terms = c("tmeanC","ppt.cm[101,110]"))
 
-# Assuming the tmeanC variable has two levels #this works, but the line is red and the labels need to be added for the 2 levels of tmeanC
-# Convert tmeanC to factor
+plot(pred_tmeanC, show_data = TRUE, dot_alpha = 0.8, alpha = 0.3, limit_range = TRUE)
+
+pred_tmeanC$ppt_group <- pred_tmeanC$group
+levels(pred_tmeanC$ppt_group) <- c("low (92-104)",  
+                                   "high (104-142)")
 
 data <- data %>%
-  mutate(group = cut(tmeanC, breaks = c(-10,6.5,25)))
-pred_pptC <- ggpredict(m1P, terms = c("ppt.cm", "factor(tmeanC[5,8])"))
+  drop_na(ppt.cm) %>% 
+  dplyr::mutate(ppt_group = cut(ppt.cm, breaks = c(92,104,142)))
 
-mgPOM_pptC <- data %>% 
+levels(data$ppt_group) <- c("low (92-104)",  
+                              "high (104-142)")
+
+mgPOM_tmeanC <-data %>% 
   ggplot() +
-  geom_point(aes(x = ppt.cm, y = mgCpergSoilP), # plot your data
+  geom_point(aes(x = tmeanC, y = mgCpergSoilP, col = ppt_group), #plot your data
              size = 1.5, alpha = 0.5) +
-  geom_line(data = pred_pptC, # use the converted predicted values data frame
-                aes(x = x, y = predicted, color = group), # color by tmeanC levels
-                lwd = 1) +
-  own_theme + # assuming you have your own theme defined
-  theme(legend.position = "none") +
+  geom_line(pred_tmeanC, mapping = aes(x=x, y=predicted, col = ppt_group), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  #theme(legend.position = "none") +
   scale_y_continuous(expression("mg C in POM per g soil")) +
-  scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
+  scale_x_continuous(expression("Mean Annual Temperature (C)"),
                      label = scales::comma) +
-  scale_color_manual(values = c("blue", "red")) # adjust colors if needed
-mgPOM_pptC
+  scale_color_manual(values = c("blue", "black")) # adjust colors if needed
 
+mgPOM_tmeanC
 
-#trying this code  #this doesn't work
-data <- as.data.frame(data)
-if (!is.data.frame(data)) {
-  stop("Data must be a data frame.")
-}
+ggsave("mgPOM_ppt_tmeanC_2.jpeg", width = 4, height = 3)
 
-ggsave("mgPOM_ppt_tmeanC.jpeg", width = 4, height = 3)
-
-
-#trying code #dataframe error
-data <- data %>%
-  mutate(group = cut(tmeanC, breaks = c(-10,6.5,25), labels=c(5,8)))
-         pred_pptC <- ggpredict(m1P, terms = c("ppt.cm", "factor(tmeanC[5,8])"))
-         mgPOM_pptC <- data %>% 
-           ggplot() +
-           geom_point(aes(x = ppt.cm, y = mgCpergSoilP), # plot your data
-                      size = 1.5, alpha = 0.5) +
-           geom_line(data = pred_pptC$predicted, # use the converted predicted values data frame
-                     aes(x = x, y = predicted, color = factor(group, levels = c(5, 8))), # color by tmeanC levels
-                     lwd = 1) +
-           
-                       own_theme + # remember to define/run own theme first
-                       theme(legend.position = "none") +  #I think we take this out because we do want a legend of colors
-                       scale_y_continuous(expression("mg C in POM per g soil")) +
-                       scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
-                                          label = scales::comma) +
-                       scale_color_manual(values = c("blue", "red")) # adjust colors if needed
-                     mgPOM_pptC
-                     
-
-    #Do I run the above code again for tmeanC at different levels of ppt?     
                      
 #pred_tmeanC <- ggpredict(m1P, terms = c("tmeanC","factor(ppt.cm[95,115])"))
 
