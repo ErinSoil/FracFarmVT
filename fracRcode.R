@@ -1,7 +1,7 @@
 #exploring data of fractionation study
 
-#setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
-setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
+setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
+#setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
 
 #load your libraries
 library(tidyverse)
@@ -12,6 +12,7 @@ library(emmeans)
 library(nlme)
 library(ggeffects)
 
+##TO CREATE FILE to work with 
 ##call in the analytical data
 #Frac <- read.csv(file="Frac.csv", header=TRUE, sep=",")
 #Loc <- read.csv(file="Location.csv", header=TRUE, sep=",")
@@ -19,7 +20,23 @@ library(ggeffects)
 #Master <- read.csv(file="Master.csv", header=TRUE, sep=",", fileEncoding="latin1")
 #PRISM2annual <- read.csv(file="PRISM2annual.csv", header=TRUE, sep=",")
 
+<<<<<<< Updated upstream
 data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
+=======
+# Get summary statistics
+data_summary <- summary(Mang)
+
+data_min <- min(Mang$Acres,na.rm=TRUE)
+data_max <- max(Mang$Acres,na.rm=TRUE)
+
+data_summary <-summary(PRISMannual)
+data_min <- min(PRISMannual$ppt..inches.,na.rm=TRUE)
+data_max <- max(PRISMannual$ppt..inches.,na.rm=TRUE)
+
+data_summary <-summary(PRISMannual)
+data_min <- min(PRISMannual$tmean..degrees.F.,na.rm=TRUE)
+data_max <- max(PRISMannual$tmean..degrees.F,na.rm=TRUE)
+>>>>>>> Stashed changes
 
 # join tables
 #fracData<-Frac %>%
@@ -29,6 +46,9 @@ data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
 # fracData<-fracData %>%
 #   left_join(.,PRISM2annual,by="Field_Code")
 # names(fracData)
+
+##START HERE
+data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
 
 #linear model
 #First, graphically explore relationships among variables
@@ -291,8 +311,34 @@ own_theme <- theme_bw(base_size = 11) +
         axis.line = element_line(color = "black"),
         panel.grid.minor = element_blank())
 
+<<<<<<< Updated upstream
 #for aggregate stability
 pred_aggregate_stability <- ggpredict(m1, terms = c("aggregate_stability"))
+=======
+pred_ppt <- ggpredict(m1, terms = c("ppt.cm", "soil_texture_clay[20]"))
+
+mgMAOM_ppt <-data %>% 
+  ggplot() +
+  geom_point(aes(x = ppt.cm, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_ppt, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
+                     label = scales::comma) 
+
+mgMAOM_ppt
+
+ggsave("mgMAOM_ppt.jpeg", width = 4, height = 3)
+
+
+#for agg stability 
+
+pred_aggregate_stability <- ggpredict(m1, terms = c("aggregate_stability", "soil_texture_clay[20]"))
+
+>>>>>>> Stashed changes
 mgMAOM_aggregate_stability <-data %>% 
   ggplot() +
   geom_point(aes(x = aggregate_stability, y = mgCpergSoilM), #plot your data
@@ -302,7 +348,11 @@ mgMAOM_aggregate_stability <-data %>%
   own_theme+
   theme(legend.position = "none") +
   scale_y_continuous(expression("mg C in MAOM per g soil"))+
+<<<<<<< Updated upstream
   scale_x_continuous(expression("aggregate_stability"),
+=======
+  scale_x_continuous(expression("aggregate stability"),
+>>>>>>> Stashed changes
                      label = scales::comma) 
 mgMAOM_aggregate_stability
 ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)

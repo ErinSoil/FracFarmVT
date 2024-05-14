@@ -389,9 +389,9 @@ propMAOMbyFieldType <- ggplot(data, aes(x=Type.x, y=propM)) +
 propMAOMbyFieldType
 
 #transform data logit
-library(MASS)
-data %>%
-logit_transformed <- logit(propM)
+library(gtools)
+data <- data %>%
+ dplyr::mutate(logit_transformed = logit(propM))
 
 # Log transformation
 log_transformed <- log(logit_transformed)
