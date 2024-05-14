@@ -223,14 +223,14 @@ summary(data$tmeanC)
 pred_pptC <- ggpredict(m1P, terms = c("ppt.cm", "tmeanC[6.8,7.5]"))
 
 pred_pptC$tmean_group <- pred_pptC$group
-levels(pred_pptC$tmean_group) <- c("low (5-7.2)",  
+levels(pred_pptC$tmean_group) <- c("low (4.5-7.2)",  
                                      "high (7.2-8.6)")
 
 data <- data %>%
   drop_na(tmeanC) %>% 
-  mutate(tmean_group = cut(tmeanC, breaks = c(4.5,7.2,8.6)))
+  dplyr::mutate(tmean_group = cut(tmeanC, breaks = c(4.5,7.2,8.6)))
 
-levels(data$tmean_group) <- c("low (5-7.2)",  
+levels(data$tmean_group) <- c("low (4.5-7.2)",  
                                    "high (7.2-8.6)")
 
 mgPOM_pptC <-data %>% 
