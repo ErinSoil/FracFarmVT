@@ -20,6 +20,7 @@ library(ggeffects)
 #PRISM2annual <- read.csv(file="PRISM2annual.csv", header=TRUE, sep=",")
 
 data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
+view(data$propM)
 
 # join tables
 #fracData<-Frac %>%
@@ -30,6 +31,17 @@ data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
 #   left_join(.,PRISM2annual,by="Field_Code")
 # names(fracData)
 
+#calculate propMOAM
+library(dplyr)
+data <- data %>%
+  mutate(propM = gCarbonM/(gCarbonM+ gCarbonP))
+
+summary(data$propM)
+
+hist(data$propM, main = "Histogram of propM", xlab = "propM Values", ylab = "Frequency")
+ 
+write.csv(data,"data.csv")
+
 #linear model
 #First, graphically explore relationships among variables
 #look for interactions between independent variables
@@ -37,7 +49,10 @@ data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
 #interactions with clay
 View (data)
 
-ggplot(data=data, aes(x=tmeanC, y=propM, col=soil_texture_clay))+ 
+data <- data %>% 
+  mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+
+ggplot(data=data, aes(x=tmeanC, y=logitpropM, col=soil_texture_clay))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ claycategory, ncol=1, scales="free_x")
@@ -72,19 +87,19 @@ ggplot(data=data, aes(x=tmeanC, y=propM, col=ppt.cm))+
   facet_wrap(~ pptcategory, ncol=1, scales="free_x")
 
 
-ggplot(data=data, aes(x=aggregate_stability, y=propM, col=ppt.cm))+ 
+ggplot(data=data, aes(x=aggregate_stability, y=logitpropM, col=ppt.cm))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ pptcategory, ncol=1, scales="free_x")
 
 
-ggplot(data=data, aes(x=ph, y=propM, col=ppt.cm))+ 
+ggplot(data=data, aes(x=ph, y=logitpropM, col=ppt.cm))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ pptcategory, ncol=1, scales="free_x")
 
 
-ggplot(data=data, aes(x=active_carbon, y=propM, col=ppt.cm))+ 
+ggplot(data=data, aes(x=active_carbon, y=logitpropM, col=ppt.cm))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ pptcategory, ncol=1, scales="free_x")
@@ -124,14 +139,14 @@ ggplot(data=data, aes(x=active_carbon, y=propM, col=aggregate_stability))+
 
 
 #Correlation plot
-cordata <- cor(data[,c("propM","ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
+cordata <- cor(data[,c("mgCpergSoilP", "mgCpergSoilM", "propM","ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
 corrplot(cordata)
 view(cordata)
-
+head(cordata)
 ##Linear Mixed Model for dependent variable (propM)
 #test without random effect, because only one value per field
 
-m1M=gls(propM~ppt.cm+soil_texture_clay+
+m1M=gls(logitpropM~ppt.cm+soil_texture_clay+
          tmeanC+aggregate_stability+active_carbon+ 
          ph, data=data, na.action=na.exclude, method="ML")
 summary(m1M)
@@ -183,9 +198,15 @@ mType=aov(propM~Type.x, data=data, na.action=na.exclude)
 summary(mType)
 TukeyHSD(mType)
 
+#run model same as POM with interactions
+m1propM=gls(logitpropM~soil_texture_clay*ppt.cm+soil_texture_clay*tmeanC+
+          ppt.cm*tmeanC+aggregate_stability*active_carbon+ 
+          ph, data=data, na.action=na.exclude, method="ML")
+summary(m1propM)
+anova(m1propM)
 
 #check if variance structure improves the model, (to test, both methods were set to REML)
-m1aM=gls(propM~ppt.cm+soil_texture_clay+
+m1aM=gls(logitpropM~ppt.cm+soil_texture_clay+
           tmeanC+aggregate_stability+active_carbon+ 
           ph, data=data, na.action=na.exclude, weights = varFixed(~propM), method="ML")
 anova(m1M, m1aM) #adding variance structure does not improve the model
@@ -393,6 +414,26 @@ library(gtools)
 data <- data %>%
  dplyr::mutate(logit_transformed = logit(propM))
 
+
+hist(logit_transformed, main = "Histogram of propM", xlab = "propM Values", ylab = "Frequency")
+
 # Log transformation
 log_transformed <- log(logit_transformed)
 
+#view PropM data
+View(data)
+
+
+
+#transform data logit
+library(gtools)
+data <- data %>%
+  dplyr::mutate(logitpropM = logit(propM))
+
+hist(data$logitpropM)
+                
+ View(logit)
+ summary(logit)
+                
+ hist(data$logit, main = "Histogram of propM", xlab = "propM Values", ylab = "Frequency")               
+ 
