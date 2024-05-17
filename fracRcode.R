@@ -1,7 +1,7 @@
 #exploring data of fractionation study
 
-setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
-#setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
+#setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
+setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
 
 #load your libraries
 library(tidyverse)
@@ -14,14 +14,37 @@ library(ggeffects)
 
 ##TO CREATE FILE to work with 
 ##call in the analytical data
-#Frac <- read.csv(file="Frac.csv", header=TRUE, sep=",")
-#Loc <- read.csv(file="Location.csv", header=TRUE, sep=",")
-#Mang <- read.csv(file="Mang.csv", header=TRUE, sep=",") 
-#Master <- read.csv(file="Master.csv", header=TRUE, sep=",", fileEncoding="latin1")
-#PRISM2annual <- read.csv(file="PRISM2annual.csv", header=TRUE, sep=",")
+Frac <- read.csv(file="Frac.csv", header=TRUE, sep=",")
+Loc <- read.csv(file="Location.csv", header=TRUE, sep=",")
+Mang <- read.csv(file="Mang.csv", header=TRUE, sep=",") 
+Master2 <- read.csv(file="Master2.csv", header=TRUE, sep=",", fileEncoding="latin1")
+PRISM2annual <- read.csv(file="PRISM2annual.csv", header=TRUE, sep=",")
 
-<<<<<<< Updated upstream
+# join tables
+fracData<-Frac %>%
+  left_join(.,Mang,by="Field_Code")
+ fracData<-fracData %>%
+    left_join(.,Master2,by=c("Field_Code")) 
+ fracData<-fracData %>%
+   left_join(.,PRISM2annual,by="Field_Code")
+ names(fracData)
+
 data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
+
+#Write updated dataframe to CSV, overwriting the existing file
+write.csv(data, file = "C:/Users/F004SPC/Documents/GitHub/FracFarmVT/data", row.names = FALSE)
+
+View(data)
+
+#view na for ph
+missing_ph <- subset(data, is.na(ph) | ph == "")
+missing_field_codes <- missing_ph$Field_Code
+print(missing_field_codes)
+
+missing_mgCpergSoilM <- subset(data, is.na(mgCpergSoilM) | mgCpergSoilM == "")
+missing_field_codes <- missing_mgCpergSoilM$Field_Code
+print(missing_field_codes)
+
 =======
 # Get summary statistics
 data_summary <- summary(Mang)
@@ -38,23 +61,12 @@ data_min <- min(PRISMannual$tmean..degrees.F.,na.rm=TRUE)
 data_max <- max(PRISMannual$tmean..degrees.F,na.rm=TRUE)
 >>>>>>> Stashed changes
 
-# join tables
-#fracData<-Frac %>%
-#  left_join(.,Mang,by="Field_Code")
-# fracData<-fracData %>%
-#     left_join(.,Master,by=c("Field_Code", "soil_texture_class")) 
-# fracData<-fracData %>%
-#   left_join(.,PRISM2annual,by="Field_Code")
-# names(fracData)
 
-##START HERE
-data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
-
-#linear model
-#First, graphically explore relationships among variables
-#look for interactions between independent variables
+#First, graphically explore relationships 
+#to look for interactions between independent variables
 
 View (data)
+
 data <- data %>% 
   mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
   
@@ -67,6 +79,30 @@ data <- data %>%
     mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
   
   ggplot(data=data, aes(x=ppt.cm, y=mgCpergSoilM, col=soil_texture_clay))+ 
+    geom_point()+
+    geom_smooth(method=lm)+
+    facet_wrap(~ claycategory, ncol=1, scales="free_x")
+  
+  data <- data %>% 
+    mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+  
+  ggplot(data=data, aes(x=ph, y=mgCpergSoilM, col=soil_texture_clay))+ 
+    geom_point()+
+    geom_smooth(method=lm)+
+    facet_wrap(~ claycategory, ncol=1, scales="free_x")
+  
+  data <- data %>% 
+    mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+  
+  ggplot(data=data, aes(x=aggregate_stability, y=mgCpergSoilM, col=soil_texture_clay))+ 
+    geom_point()+
+    geom_smooth(method=lm)+
+    facet_wrap(~ claycategory, ncol=1, scales="free_x")
+  
+  data <- data %>% 
+    mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+  
+  ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilM, col=soil_texture_clay))+ 
     geom_point()+
     geom_smooth(method=lm)+
     facet_wrap(~ claycategory, ncol=1, scales="free_x")
@@ -423,4 +459,27 @@ mgMAOM_active_carbonbyField <-data %>%
 mgMAOM_active_carbonbyField
 ggsave("mgMAOM_active_carbonbyField.jpeg", width = 4, height = 3)
 
+View (PRISM2annual)
+View(Frac)
+merged_data <- merge ((Frac), PRISM2annual, by = "Field_Code", all = FALSE)
+matching_ids <- Frac$Field_Code %in% PRISM2annual$Field_Code
+
+View(matching_ids$merged_data)
+
+unmatched_ids <- anti_join(Frac, PRISM2annual, by = "Field_Code")
+
+# View the unmatched IDs
+print(unmatched_ids)
+
+
+
+#view NA for ppt in data
+missing_tmean <- subset(data, is.na(tmeanC) | tmeanC == "")
+
+missing_field_codes <- missing_tmean$Field_Code
+print(missing_field_codes)
+
+missing_mgCpergSoilM <- subset(data, is.na(mgCpergSoilM) | mgCpergSoilM == "")
+missing_field_codes <- missing_mgCpergSoilM$Field_Code
+print(missing_field_codes)
 
