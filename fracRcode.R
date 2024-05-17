@@ -20,23 +20,22 @@ Mang <- read.csv(file="Mang.csv", header=TRUE, sep=",")
 Master2 <- read.csv(file="Master2.csv", header=TRUE, sep=",", fileEncoding="latin1")
 PRISM2annual <- read.csv(file="PRISM2annual.csv", header=TRUE, sep=",")
 
-# join tables
-fracData<-Frac %>%
-  left_join(.,Mang,by="Field_Code")
- fracData<-fracData %>%
-    left_join(.,Master2,by=c("Field_Code")) 
- fracData<-fracData %>%
+# join tables  
+fracData2<-Frac %>%
+  left_join(.,Master2,by=c("Field_Code", "soil_texture_class")) 
+ fracData2<-fracData2 %>%
+    left_join(.,Mang,by="Field_Code")
+ fracData2<-fracData2 %>%
    left_join(.,PRISM2annual,by="Field_Code")
- names(fracData)
-
-data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
+ names(fracData2)
 
 #Write updated dataframe to CSV, overwriting the existing file
-write.csv(data, file = "C:/Users/F004SPC/Documents/GitHub/FracFarmVT/data", row.names = FALSE)
+write.csv(fracData2, file = "C:/Users/F004SPC/Documents/GitHub/FracFarmVT/fracData2.csv", row.names = FALSE)
+data <- read.csv(file="fracData2.csv", header=TRUE, sep=",")
 
 View(data)
 
-#view na for ph
+#view na for ph  #LO26, Z1, Z2, MC10, can still look for LO26 and maybe MC10, the rest are truly NA
 missing_ph <- subset(data, is.na(ph) | ph == "")
 missing_field_codes <- missing_ph$Field_Code
 print(missing_field_codes)
@@ -45,7 +44,6 @@ missing_mgCpergSoilM <- subset(data, is.na(mgCpergSoilM) | mgCpergSoilM == "")
 missing_field_codes <- missing_mgCpergSoilM$Field_Code
 print(missing_field_codes)
 
-=======
 # Get summary statistics
 data_summary <- summary(Mang)
 
