@@ -8,9 +8,9 @@ library(tidyverse)
 library(ggplot2)
 library(dplyr)
 library(corrplot)
-library(emmeans)
 library(nlme)
 library(ggeffects)
+library(emmeans)
 
 ##TO CREATE FILE to work with 
 ##call in the analytical data
@@ -57,11 +57,10 @@ data_max <- max(PRISMannual$ppt..inches.,na.rm=TRUE)
 data_summary <-summary(PRISMannual)
 data_min <- min(PRISMannual$tmean..degrees.F.,na.rm=TRUE)
 data_max <- max(PRISMannual$tmean..degrees.F,na.rm=TRUE)
->>>>>>> Stashed changes
 
 
 #First, graphically explore relationships 
-#to look for interactions between independent variables
+#to look for interactions between independent variables that research shows could have interactions
 
 View (data)
 
@@ -121,6 +120,31 @@ data <- data %>%
     geom_point()+
     geom_smooth(method=lm)+
     facet_wrap(~ phcategory, ncol=1, scales="free_x")
+  
+  data <- data %>% 
+    mutate(phcategory=cut(ph, breaks=c(-Inf,6.17, 6.52, 6.93, Inf), labels=c("low","med","high", "veryhigh")))
+  
+  ggplot(data=data, aes(x=aggregate_stability, y=mgCpergSoilM, col=ph))+ 
+    geom_point()+
+    geom_smooth(method=lm)+
+    facet_wrap(~ phcategory, ncol=1, scales="free_x")
+  
+  data <- data %>% 
+    mutate(phcategory=cut(ph, breaks=c(-Inf,6.17, 6.52, 6.93, Inf), labels=c("low","med","high", "veryhigh")))
+  
+  ggplot(data=data, aes(x=soil_texture_clay, y=mgCpergSoilM, col=ph))+ 
+    geom_point()+
+    geom_smooth(method=lm)+
+    facet_wrap(~ phcategory, ncol=1, scales="free_x")
+  
+  data <- data %>% 
+    mutate(phcategory=cut(ph, breaks=c(-Inf,6.17, 6.52, 6.93, Inf), labels=c("low","med","high", "veryhigh")))
+  
+  ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilM, col=ph))+ 
+    geom_point()+
+    geom_smooth(method=lm)+
+    facet_wrap(~ phcategory, ncol=1, scales="free_x")
+  
   
   #interactions with ppt
   data <- data %>% 
@@ -207,6 +231,7 @@ data <- data %>%
 cordata <- cor(data[,c("mgCpergSoilM","ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
 corrplot(cordata)
   view(cordata)
+  
 ##Linear Mixed Model for dependent variable (mgCpergSoilM)
 
 #test without random effect, because only one value per field

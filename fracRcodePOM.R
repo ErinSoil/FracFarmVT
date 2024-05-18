@@ -12,7 +12,20 @@ library(emmeans)
 library(nlme)
 library(ggeffects)
 
-data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
+data <- read.csv(file="fracData2.csv", header=TRUE, sep=",")
+
+
+View(data)
+
+#view na for ph  #LO26, Z1, Z2, MC10, can still look for LO26 and maybe MC10, the rest are truly NA
+missing_ph <- subset(data, is.na(ph) | ph == "")
+missing_field_codes <- missing_ph$Field_Code
+print(missing_field_codes)
+
+missing_mgCpergSoilP <- subset(data, is.na(mgCpergSoilM) | mgCpergSoilP == "")
+missing_field_codes <- missing_mgCpergSoilM$Field_Code
+print(missing_field_codes)
+
 
 #First, graphically explore relationships among variables
 #look for interactions between independent variables

@@ -19,7 +19,7 @@ library(ggeffects)
 #Master <- read.csv(file="Master.csv", header=TRUE, sep=",", fileEncoding="latin1")
 #PRISM2annual <- read.csv(file="PRISM2annual.csv", header=TRUE, sep=",")
 
-data <- read.csv(file="fracData.csv", header=TRUE, sep=",")
+data <- read.csv(file="fracData2.csv", header=TRUE, sep=",")
 view(data$propM)
 
 # join tables
@@ -42,6 +42,18 @@ hist(data$propM, main = "Histogram of propM", xlab = "propM Values", ylab = "Fre
  
 write.csv(data,"data.csv")
 
+#transform data logit
+library(gtools)
+data <- data %>%
+  dplyr::mutate(logitpropM = logit(propM))
+
+hist(data$logitpropM)
+                
+ View(logit)
+ summary(logit)
+                
+ hist(data$logit, main = "Histogram of propM", xlab = "propM Values", ylab = "Frequency")               
+ 
 #linear model
 #First, graphically explore relationships among variables
 #look for interactions between independent variables
@@ -57,7 +69,7 @@ ggplot(data=data, aes(x=tmeanC, y=logitpropM, col=soil_texture_clay))+
   geom_smooth(method=lm)+
   facet_wrap(~ claycategory, ncol=1, scales="free_x")
 
-ggplot(data=data, aes(x=ppt.cm, y=propM, col=soil_texture_clay))+ 
+ggplot(data=data, aes(x=ppt.cm, y=logitpropM, col=soil_texture_clay))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ claycategory, ncol=1, scales="free_x")
@@ -66,13 +78,13 @@ ggplot(data=data, aes(x=ppt.cm, y=propM, col=soil_texture_clay))+
 data <- data %>% 
   mutate(phcategory=cut(ph, breaks=c(-Inf,6.17, 6.52, 6.93, Inf), labels=c("low","med","high", "veryhigh")))
 
-ggplot(data=data, aes(x=tmeanC, y=propM, col=ph))+ 
+ggplot(data=data, aes(x=tmeanC, y=logitpropM, col=ph))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ phcategory, ncol=1, scales="free_x")
 
 
-ggplot(data=data, aes(x=ppt.cm, y=propM, col=ph))+ 
+ggplot(data=data, aes(x=ppt.cm, y=logitpropM, col=ph))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ phcategory, ncol=1, scales="free_x")
@@ -81,7 +93,7 @@ ggplot(data=data, aes(x=ppt.cm, y=propM, col=ph))+
 data <- data %>% 
   mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 106.4, 110.0, Inf), labels=c("low","med","high", "veryhigh")))
 
-ggplot(data=data, aes(x=tmeanC, y=propM, col=ppt.cm))+ 
+ggplot(data=data, aes(x=tmeanC, y=logitpropM, col=ppt.cm))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ pptcategory, ncol=1, scales="free_x")
@@ -110,36 +122,36 @@ summary(data$aggregate_stability)
 data <- data %>% 
   mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.8, 46.7, 63.7, Inf), labels=c("low","med","high", "veryhigh")))
 
-ggplot(data=data, aes(x=ph, y=propM, col=aggregate_stability))+ 
+ggplot(data=data, aes(x=ph, y=logitpropM, col=aggregate_stability))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ agStcategory, ncol=1, scales="free_x")
 
 
-ggplot(data=data, aes(x=ppt.cm, y=propM, col=aggregate_stability))+ 
+ggplot(data=data, aes(x=ppt.cm, y=logitpropM, col=aggregate_stability))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ agStcategory, ncol=1, scales="free_x")
 
-ggplot(data=data, aes(x=tmeanC, y=propM, col=aggregate_stability))+ 
+ggplot(data=data, aes(x=tmeanC, y=logitpropM, col=aggregate_stability))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ agStcategory, ncol=1, scales="free_x")
 
 
-ggplot(data=data, aes(x=soil_texture_clay, y=propM, col=aggregate_stability))+ 
+ggplot(data=data, aes(x=soil_texture_clay, y=logitpropM, col=aggregate_stability))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ agStcategory, ncol=1, scales="free_x")
 
-ggplot(data=data, aes(x=active_carbon, y=propM, col=aggregate_stability))+ 
+ggplot(data=data, aes(x=active_carbon, y=logitpropM, col=aggregate_stability))+ 
   geom_point()+
   geom_smooth(method=lm)+
   facet_wrap(~ agStcategory, ncol=1, scales="free_x")
 
 
 #Correlation plot
-cordata <- cor(data[,c("mgCpergSoilP", "mgCpergSoilM", "propM","ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
+cordata <- cor(data[,c("mgCpergSoilP", "mgCpergSoilM", "logitpropM","ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
 corrplot(cordata)
 view(cordata)
 head(cordata)
@@ -409,31 +421,11 @@ propMAOMbyFieldType <- ggplot(data, aes(x=Type.x, y=propM)) +
   geom_boxplot()
 propMAOMbyFieldType
 
+
 #transform data logit
-library(gtools)
-data <- data %>%
- dplyr::mutate(logit_transformed = logit(propM))
-
-
-hist(logit_transformed, main = "Histogram of propM", xlab = "propM Values", ylab = "Frequency")
-
-# Log transformation
+ Log transformation
 log_transformed <- log(logit_transformed)
+hist(logit_transformed, main = "Histogram of propM", xlab = "propM Values", ylab = "Frequency")
 
 #view PropM data
 View(data)
-
-
-
-#transform data logit
-library(gtools)
-data <- data %>%
-  dplyr::mutate(logitpropM = logit(propM))
-
-hist(data$logitpropM)
-                
- View(logit)
- summary(logit)
-                
- hist(data$logit, main = "Histogram of propM", xlab = "propM Values", ylab = "Frequency")               
- 
