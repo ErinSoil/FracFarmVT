@@ -164,6 +164,18 @@ m1M=gls(logitpropM~ppt.cm+soil_texture_clay+
 summary(m1M)
 anova(m1M)
 
+m1M2=gls(logitpropM~ppt.cm*soil_texture_clay+
+         soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability*soil_texture_clay+active_carbon+ 
+         ph, data=data, na.action=na.exclude, method="ML")
+summary(m1M2)
+anova(m1M2)
+
+m1M3=gls(logitpropM~ppt.cm+soil_texture_clay*
+          tmeanC+aggregate_stability+active_carbon+ 
+          ph, data=data, na.action=na.exclude, method="ML")
+summary(m1M3)
+anova(m1M3)
+
 #new mb test, minus ph
 mbM=gls(propM~ppt.cm+soil_texture_clay+
           tmeanC+aggregate_stability+active_carbon, data=data, na.action=na.exclude, method="ML")

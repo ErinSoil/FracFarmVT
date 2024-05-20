@@ -124,10 +124,17 @@ corrplot(cordata)
 #test without random effect, because only one value per field
 
 m1P=gls(mgCpergSoilP~soil_texture_clay*ppt.cm+soil_texture_clay*tmeanC+
-          ppt.cm*tmeanC+aggregate_stability*active_carbon+ 
+          ppt.cm*tmeanC+aggregate_stability*active_carbon+ aggregate_stability*soil_texture_clay+
          ph, data=data, na.action=na.exclude, method="ML")
 summary(m1P)
 anova(m1P)
+
+m1P2=gls(mgCpergSoilP~ppt.cm+soil_texture_clay+
+         tmeanC+aggregate_stability+active_carbon+ 
+         ph, data=data, na.action=na.exclude, method="ML")
+summary(m1P2)
+anova(m1P2)
+
 
 #Erin needs better understanding of this. Do we change REML to ML?  #check if variance structure improves the model, it does not (to test, both methods were set to REML) ##this doesn't work now
 m1a=gls(mgCpergSoilP~soil_texture_clay*ppt.cm+soil_texture_clay*tmeanC+

@@ -44,6 +44,11 @@ missing_mgCpergSoilM <- subset(data, is.na(mgCpergSoilM) | mgCpergSoilM == "")
 missing_field_codes <- missing_mgCpergSoilM$Field_Code
 print(missing_field_codes)
 
+#correcting a location to get MAT and MAP
+missing_ppt <- subset(data, is.na(ppt.cm) | ppt.cm == "")
+missing_field_codes <- missing_ppt$Field_Code
+print(missing_field_codes)
+
 # Get summary statistics
 data_summary <- summary(Mang)
 
@@ -237,7 +242,7 @@ corrplot(cordata)
 #test without random effect, because only one value per field
 
 m1=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
-        soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
+        soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability*soil_texture_clay+active_carbon+ 
       ph, data=data, na.action=na.exclude, method="ML")
 summary(m1)
 anova(m1)
