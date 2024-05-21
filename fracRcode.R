@@ -242,10 +242,11 @@ corrplot(cordata)
 #test without random effect, because only one value per field
 
 m1=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
-        soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability*soil_texture_clay+active_carbon+ 
+        soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability*soil_texture_clay+aggregate_stability*ppt.cm+aggregate_stability*tmeanC+active_carbon+ 
       ph, data=data, na.action=na.exclude, method="ML")
 summary(m1)
 anova(m1)
+
 
 #new mb test
 
@@ -264,7 +265,7 @@ summary(mType)
 TukeyHSD(mType)
 
 
-mType=aov(mgperSoilM~Type.x, data=data, na.action=na.exclude) 
+mType=aov(mgCpergSoilM~Type.x, data=data, na.action=na.exclude) 
 summary(mType)
 TukeyHSD(mType)
 
@@ -363,6 +364,12 @@ active_carbon.pr <- Rfull + active_carbon.c*data$active_carbon  #Residuals + pre
                 lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
   abline(lm(active_carbon.c*data$active_carbon ~ data$active_carbon), col = "red")} 
 
+tmeanC.c <- summary(m1)$coefficients[6] #predictor coefficient
+tmeanC.pr <- Rfull + tmeanC.c*data$tmeanC  #Residuals + pred coef * predictor value
+{scatter.smooth(data$tmeanC, tmeanC.pr, 
+                lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
+  abline(lm(tmeanC.c*data$tmeanC ~ data$tmeanC), col = "red")} 
+
 par(op)
 
 #Visualize significant relationships
@@ -438,6 +445,21 @@ mgMAOM_ppt <-data %>%
 mgMAOM_ppt
 ggsave("mgMAOM_ppt.jpeg", width = 4, height = 3)
 
+#for aggregate stabilty
+pred_aggregate_stability <- ggpredict(m1, terms = c("aggregate_stability"))
+mgMAOM_aggregate_stability <-data %>% 
+  ggplot() +
+  geom_point(aes(x = aggregate_stability, y = mgCpergSoilM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_aggregate_stability, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_x_continuous(expression("Aggregate Stability"),
+                     label = scales::comma) 
+mgMAOM_aggregate_stability
+ggsave("mgMAOM_ppt.jpeg", width = 4, height = 3)
 
 #for clay # not sig different from zero, a little negative
 pred_soil_texture_clay <- ggpredict(m1, terms = c("soil_texture_clay"))

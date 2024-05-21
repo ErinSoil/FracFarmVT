@@ -123,9 +123,9 @@ corrplot(cordata)
 
 #test without random effect, because only one value per field
 
-m1P=gls(mgCpergSoilP~soil_texture_clay*ppt.cm+soil_texture_clay*tmeanC+
-          ppt.cm*tmeanC+aggregate_stability*active_carbon+ aggregate_stability*soil_texture_clay+
-         ph, data=data, na.action=na.exclude, method="ML")
+m1P=gls(mgCpergSoilP~ppt.cm*soil_texture_clay+
+          soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability*soil_texture_clay+aggregate_stability*ppt.cm+aggregate_stability*tmeanC+active_carbon+ 
+          ph, data=data, na.action=na.exclude, method="ML")
 summary(m1P)
 anova(m1P)
 
@@ -325,7 +325,39 @@ mgPOM_aggregate_stability <-data %>%
 
 mgPOM_aggregate_stability
 
+
+pred_active_carbon <- ggpredict(m1P, terms = c("active_carbon"))
+mgPOM_active_carbon <-data %>% 
+  ggplot() +
+  geom_point(aes(x = active_carbon, y = mgCpergSoilP), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_active_carbon, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in POM per g soil"))+
+  scale_x_continuous(expression("active carbon"),
+                     label = scales::comma) 
+
+mgPOM_active_carbon
+
 ggsave("mgPOM_aggregate_stability.jpeg", width = 4, height = 3)
+
+
+pred_soil_texture_clay <- ggpredict(m1P, terms = c("soil_texture_clay "))
+mgPOM_soil_texture_clay  <-data %>% 
+  ggplot() +
+  geom_point(aes(x = soil_texture_clay , y = mgCpergSoilP), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_soil_texture_clay , mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("mg C in POM per g soil"))+
+  scale_x_continuous(expression("clay"),
+                     label = scales::comma) 
+
+mgPOM_soil_texture_clay 
 
 summary(pred_pptC)
 str(pred_pptC)

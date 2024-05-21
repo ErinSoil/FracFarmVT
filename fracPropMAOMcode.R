@@ -158,11 +158,12 @@ head(cordata)
 ##Linear Mixed Model for dependent variable (propM)
 #test without random effect, because only one value per field
 
-m1M=gls(logitpropM~ppt.cm+soil_texture_clay+
-         tmeanC+aggregate_stability+active_carbon+ 
-         ph, data=data, na.action=na.exclude, method="ML")
+m1M=gls(logitpropM~ppt.cm*tmeanC+ ppt.cm*soil_texture_clay +soil_texture_clay*
+          tmeanC+aggregate_stability*ppt.cm+ aggregate_stability*soil_texture_clay +aggregate_stability*tmeanC+active_carbon+ 
+          ph, data=data, na.action=na.exclude, method="ML")
 summary(m1M)
 anova(m1M)
+
 
 m1M2=gls(logitpropM~ppt.cm*soil_texture_clay+
          soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability*soil_texture_clay+active_carbon+ 
@@ -399,17 +400,17 @@ ggsave("propMAOM_active_carbon.jpeg", width = 4, height = 3)
 pred_tmeanC <- ggpredict(m1M, terms = c("tmeanC"))
 propMAOM_tmeanC <-data %>% 
   ggplot() +
-  geom_point(aes(x = tmeanC, y = propM), #plot your data
+  geom_point(aes(x = tmeanC, y = logitpropM), #plot your data
              size = 1.5, alpha = 0.5) +
   geom_line(pred_tmeanC, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_y_continuous(expression("prop C in MAOM"))+
-  scale_x_continuous(expression("active_carbon"),
+  scale_y_continuous(expression("logit prop C in MAOM"))+
+  scale_x_continuous(expression("Mean Annual Temperature (C)"),
                      label = scales::comma) 
 propMAOM_tmeanC
-ggsave("propMAOM_active_carbon.jpeg", width = 4, height = 3)
+ggsave("propMAOM_tmeanC.jpeg", width = 4, height = 3)
 
 
 #analyze data by field type. group by and color by field type this code is in progress

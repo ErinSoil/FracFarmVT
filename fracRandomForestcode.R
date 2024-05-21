@@ -21,7 +21,7 @@ fracData_rmALLpm <- fracData %>%
       organic == 0 ~ "NotOrganic",
       organic== 1 ~ "Organic",
       TRUE~"Other")) %>%
-  select(organicNew,active_carbon,ph,ppt.cm,tmeanC,overall.score, soil_texture_clay, organic_matter, aggregate_stability, pred_water_capacity, propM) %>%
+  select(organicNew,active_carbon,ph,ppt.cm,tmeanC,overall.score, soil_texture_clay, organic_matter, aggregate_stability, pred_water_capacity, logitpropM) %>%
   #remove the rows with ~25ish missing data 
   drop_na() 
 # create a new dataframe with more variables for the rf predictor (mgCpergSoilP)
@@ -39,7 +39,7 @@ fracData_soilhealthM <- fracData %>%
 view(fracData_soilhealthM)
 # create a new dataframe with only a couple variables (propM)
 fracData_soilhealthpropM <- fracData %>%
-  select(overall.score, propM) %>%
+  select(overall.score, logitpropM) %>%
   #remove the rows with ~25ish missing data 
   drop_na() 
 view(fracData_soilhealthpropM)
