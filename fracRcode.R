@@ -37,7 +37,7 @@ data <- read.csv("data.csv")
 
 View(data)
 
-#view na for ph  #LO26, Z1, Z2, MC10, can still look for LO26 and maybe MC10, the rest are truly NA
+#view na for ph  # Z1, Z2 are truly NA as no CASH was completed for these
 missing_ph <- subset(data, is.na(ph) | ph == "")
 missing_field_codes <- missing_ph$Field_Code
 print(missing_field_codes)
