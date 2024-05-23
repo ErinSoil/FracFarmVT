@@ -22,8 +22,8 @@ missing_ph <- subset(data, is.na(ph) | ph == "")
 missing_field_codes <- missing_ph$Field_Code
 print(missing_field_codes)
 
-missing_mgCpergSoilP <- subset(data, is.na(mgCpergSoilM) | mgCpergSoilP == "")
-missing_field_codes <- missing_mgCpergSoilM$Field_Code
+missing_mgCpergSoilP <- subset(data, is.na(mgCpergSoilP) | mgCpergSoilP == "")
+missing_field_codes <- missing_mgCpergSoilP$Field_Code
 print(missing_field_codes)
 
 
@@ -369,6 +369,183 @@ view(data)
   mgPOMbyFieldType <- ggplot(data, aes(x=Type.x, y=mgCpergSoilP)) + 
   geom_boxplot()
 mgPOMbyFieldType
+
+#Run interactions with fresh code for all possible
+
+
+data <- data %>% 
+  mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+
+ggplot(data=data, aes(x=tmeanC, y=mgCpergSoilP, col=soil_texture_clay))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ claycategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+
+ggplot(data=data, aes(x=ppt.cm, y=mgCpergSoilP, col=soil_texture_clay))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ claycategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+
+ggplot(data=data, aes(x=ph, y=mgCpergSoilP, col=soil_texture_clay))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ claycategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+
+ggplot(data=data, aes(x=aggregate_stability, y=mgCpergSoilP, col=soil_texture_clay))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ claycategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+
+ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilP, col=soil_texture_clay))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ claycategory, ncol=1, scales="free_x")
+
+#more interactions with ph
+summary(data$ph)
+
+data <- data %>% 
+  mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=tmeanC, y=mgCpergSoilP, col=ph))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ phcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=ppt.cm, y=mgCpergSoilP, col=ph))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ phcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=aggregate_stability, y=mgCpergSoilP, col=ph))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ phcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=soil_texture_clay, y=mgCpergSoilP, col=ph))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ phcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilP, col=ph))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ phcategory, ncol=1, scales="free_x")
+
+#interactions with ppt
+
+data <- data %>% 
+  mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 110.0, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=tmeanC, y=mgCpergSoilP, col=ppt.cm))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ pptcategory, ncol=1, scales="free_x")
+
+
+data <- data %>% 
+  mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 110.0, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=aggregate_stability, y=mgCpergSoilP, col=ppt.cm))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ pptcategory, ncol=1, scales="free_x")
+
+summary(data$ppt.cm)
+data <- data %>% 
+  mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 110.0, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=tmeanC, y=mgCpergSoilP, col=ppt.cm))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ pptcategory, ncol=1, scales="free_x")
+
+
+data <- data %>% 
+  mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 110.0, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilP, col=ppt.cm))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ pptcategory, ncol=1, scales="free_x")
+
+#interactions with aggregate stability
+summary(data$aggregate_stability)
+
+data <- data %>% 
+  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=ph, y=mgCpergSoilP, col=aggregate_stability))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ agStcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=ppt.cm, y=mgCpergSoilP, col=aggregate_stability))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ agStcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=tmeanC, y=mgCpergSoilP, col=aggregate_stability))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ agStcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=soil_texture_clay, y=mgCpergSoilP, col=aggregate_stability))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ agStcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilP, col=aggregate_stability))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ agStcategory, ncol=1, scales="free_x")
+
+#tmeanC and active carbon
+summary(data$tmeanC)
+
+data <- data %>% 
+  mutate(tmeanCcategory=cut(tmeanC, breaks=c(-Inf,6.8, 7.6, Inf), labels=c("low","med","high")))
+
+ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilP, col=tmeanC))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ tmeanCcategory, ncol=1, scales="free_x")
   
 
 

@@ -33,6 +33,8 @@ fracData2<-Frac %>%
 write.csv(fracData2, file = "C:/Users/F004SPC/Documents/GitHub/FracFarmVT/fracData2.csv", row.names = FALSE)
 data <- read.csv(file="fracData2.csv", header=TRUE, sep=",")
 
+data <- read.csv("data.csv")
+
 View(data)
 
 #view na for ph  #LO26, Z1, Z2, MC10, can still look for LO26 and maybe MC10, the rest are truly NA
@@ -68,7 +70,8 @@ data_max <- max(PRISMannual$tmean..degrees.F,na.rm=TRUE)
 #to look for interactions between independent variables that research shows could have interactions
 
 View (data)
-
+summary(data$soil_texture_clay)
+summary(data$soil_texture_clay)
 data <- data %>% 
   mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
   
@@ -110,8 +113,10 @@ data <- data %>%
     facet_wrap(~ claycategory, ncol=1, scales="free_x")
   
  #more interactions with ph
+  summary(data$ph)
+  
     data <- data %>% 
-    mutate(phcategory=cut(ph, breaks=c(-Inf,6.17, 6.52, 6.93, Inf), labels=c("low","med","high", "veryhigh")))
+    mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
   
   ggplot(data=data, aes(x=tmeanC, y=mgCpergSoilM, col=ph))+ 
     geom_point()+
@@ -119,7 +124,7 @@ data <- data %>%
     facet_wrap(~ phcategory, ncol=1, scales="free_x")
   
   data <- data %>% 
-    mutate(phcategory=cut(ph, breaks=c(-Inf,6.17, 6.52, 6.93, Inf), labels=c("low","med","high", "veryhigh")))
+    mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
   
   ggplot(data=data, aes(x=ppt.cm, y=mgCpergSoilM, col=ph))+ 
     geom_point()+
@@ -127,7 +132,7 @@ data <- data %>%
     facet_wrap(~ phcategory, ncol=1, scales="free_x")
   
   data <- data %>% 
-    mutate(phcategory=cut(ph, breaks=c(-Inf,6.17, 6.52, 6.93, Inf), labels=c("low","med","high", "veryhigh")))
+    mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
   
   ggplot(data=data, aes(x=aggregate_stability, y=mgCpergSoilM, col=ph))+ 
     geom_point()+
@@ -135,7 +140,7 @@ data <- data %>%
     facet_wrap(~ phcategory, ncol=1, scales="free_x")
   
   data <- data %>% 
-    mutate(phcategory=cut(ph, breaks=c(-Inf,6.17, 6.52, 6.93, Inf), labels=c("low","med","high", "veryhigh")))
+    mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
   
   ggplot(data=data, aes(x=soil_texture_clay, y=mgCpergSoilM, col=ph))+ 
     geom_point()+
@@ -143,17 +148,17 @@ data <- data %>%
     facet_wrap(~ phcategory, ncol=1, scales="free_x")
   
   data <- data %>% 
-    mutate(phcategory=cut(ph, breaks=c(-Inf,6.17, 6.52, 6.93, Inf), labels=c("low","med","high", "veryhigh")))
+    mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
   
   ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilM, col=ph))+ 
     geom_point()+
     geom_smooth(method=lm)+
     facet_wrap(~ phcategory, ncol=1, scales="free_x")
   
-  
   #interactions with ppt
+  summary(data$ppt.cm)
   data <- data %>% 
-    mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 106.4, 110.0, Inf), labels=c("low","med","high", "veryhigh")))
+    mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 110.0, Inf), labels=c("low","med","high")))
   
   ggplot(data=data, aes(x=tmeanC, y=mgCpergSoilM, col=ppt.cm))+ 
     geom_point()+
@@ -162,26 +167,27 @@ data <- data %>%
   
   
   data <- data %>% 
-    mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 106.4, 110.0, Inf), labels=c("low","med","high", "veryhigh")))
+    mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 110.0, Inf), labels=c("low","med","high")))
   
   ggplot(data=data, aes(x=aggregate_stability, y=mgCpergSoilM, col=ppt.cm))+ 
     geom_point()+
     geom_smooth(method=lm)+
     facet_wrap(~ pptcategory, ncol=1, scales="free_x")
   
-  
+  summary(data$ppt.cm)
   data <- data %>% 
-    mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 106.4, 110.0, Inf), labels=c("low","med","high", "veryhigh")))
+    mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 110.0, Inf), labels=c("low","med","high")))
   
-  ggplot(data=data, aes(x=ph, y=mgCpergSoilM, col=ppt.cm))+ 
+  ggplot(data=data, aes(x=tmeanC, y=mgCpergSoilM, col=ppt.cm))+ 
     geom_point()+
     geom_smooth(method=lm)+
     facet_wrap(~ pptcategory, ncol=1, scales="free_x")
   
-  data <- data %>% 
-    mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 106.4, 110.0, Inf), labels=c("low","med","high", "veryhigh")))
   
-  ggplot(data=data, aes(x=active.carbon, y=mgCpergSoilM, col=ppt.cm))+ 
+  data <- data %>% 
+    mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 110.0, Inf), labels=c("low","med","high")))
+  
+  ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilM, col=ppt.cm))+ 
     geom_point()+
     geom_smooth(method=lm)+
     facet_wrap(~ pptcategory, ncol=1, scales="free_x")
@@ -190,16 +196,15 @@ data <- data %>%
   summary(data$aggregate_stability)
   
   data <- data %>% 
-    mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.8, 46.7, 63.7, Inf), labels=c("low","med","high", "veryhigh")))
+    mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
   
   ggplot(data=data, aes(x=ph, y=mgCpergSoilM, col=aggregate_stability))+ 
     geom_point()+
     geom_smooth(method=lm)+
     facet_wrap(~ agStcategory, ncol=1, scales="free_x")
  
-  
   data <- data %>% 
-    mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.8, 46.7, 63.7, Inf), labels=c("low","med","high", "veryhigh")))
+    mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
   
   ggplot(data=data, aes(x=ppt.cm, y=mgCpergSoilM, col=aggregate_stability))+ 
     geom_point()+
@@ -207,7 +212,7 @@ data <- data %>%
     facet_wrap(~ agStcategory, ncol=1, scales="free_x")
   
   data <- data %>% 
-    mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.8, 46.7, 63.7, Inf), labels=c("low","med","high", "veryhigh")))
+    mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
   
   ggplot(data=data, aes(x=tmeanC, y=mgCpergSoilM, col=aggregate_stability))+ 
     geom_point()+
@@ -215,21 +220,31 @@ data <- data %>%
     facet_wrap(~ agStcategory, ncol=1, scales="free_x")
   
   data <- data %>% 
-    mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.8, 46.7, 63.7, Inf), labels=c("low","med","high", "veryhigh")))
+    mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
   
   ggplot(data=data, aes(x=soil_texture_clay, y=mgCpergSoilM, col=aggregate_stability))+ 
     geom_point()+
     geom_smooth(method=lm)+
     facet_wrap(~ agStcategory, ncol=1, scales="free_x")
   
-  
   data <- data %>% 
-    mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.8, 46.7, 63.7, Inf), labels=c("low","med","high", "veryhigh")))
+    mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
   
   ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilM, col=aggregate_stability))+ 
     geom_point()+
     geom_smooth(method=lm)+
     facet_wrap(~ agStcategory, ncol=1, scales="free_x")
+  
+#tmeanC and active carbon
+  summary(data$tmeanC)
+  
+  data <- data %>% 
+    mutate(tmeanCcategory=cut(tmeanC, breaks=c(-Inf,6.8, 7.6, Inf), labels=c("low","med","high")))
+  
+  ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilM, col=tmeanC))+ 
+    geom_point()+
+    geom_smooth(method=lm)+
+    facet_wrap(~ tmeanCcategory, ncol=1, scales="free_x")
    
 #Models
 #Correlation plot
@@ -241,12 +256,15 @@ corrplot(cordata)
 
 #test without random effect, because only one value per field
 
-m1=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
-        soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability*soil_texture_clay+aggregate_stability*ppt.cm+aggregate_stability*tmeanC+active_carbon+ 
-      ph, data=data, na.action=na.exclude, method="ML")
+m1=gls(mgCpergSoilM~ppt.cm + tmeanC + aggregate_stability + active_carbon + ph + 
+         soil_texture_clay + ppt.cm:tmeanC + ppt.cm:soil_texture_clay + 
+         tmeanC:soil_texture_clay + aggregate_stability:soil_texture_clay, 
+       data=data, na.action=na.exclude, method="ML")
 summary(m1)
 anova(m1)
 
+
+drop1(m1)
 
 #new mb test
 
