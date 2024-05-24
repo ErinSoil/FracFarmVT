@@ -256,13 +256,41 @@ corrplot(cordata)
 
 #test without random effect, because only one value per field
 
-m1=gls(mgCpergSoilM~ppt.cm + tmeanC + aggregate_stability + active_carbon + ph + 
-         soil_texture_clay + ppt.cm:tmeanC + ppt.cm:soil_texture_clay + 
-         tmeanC:soil_texture_clay + aggregate_stability:soil_texture_clay, 
-       data=data, na.action=na.exclude, method="ML")
+  m1 = gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+             aggregate_stability * soil_texture_clay + 
+             active_carbon + 
+             + + ph * soil_texture_clay, 
+           data = data, 
+           na.action = na.exclude, 
+           method = "ML")
 summary(m1)
-anova(m1)
 
+
+m2 = gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+          active_carbon + ph * soil_texture_clay +aggregate_stability, 
+         data = data, 
+         na.action = na.exclude, 
+         method = "ML")
+summary(m2)
+
+m2 = gls(mgCpergSoilM ~active_carbon + ph * soil_texture_clay +
+           ppt.cm * tmeanC+aggregate_stability+ppt.cm * soil_texture_clay * tmeanC , 
+         data = data, 
+         na.action = na.exclude, 
+         method = "ML")
+summary(m2)
+anova (m1,m2)
+
+
+m1test = gls(mgCpergSoilM ~ ppt.cm + tmeanC + 
+           aggregate_stability * soil_texture_clay + 
+           active_carbon + 
+           ph,
+         data = data, 
+         na.action = na.exclude, 
+         method = "ML")
+summary(m1test)
+anova(m1test)
 
 drop1(m1)
 
@@ -331,11 +359,15 @@ anova(m5)
 
 #check assumptions, distrubution of residuals
 
-m1=gls(mgCpergSoilM~ppt.cm*soil_texture_clay+
-         soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability+active_carbon+ 
-         ph, data=data, na.action=na.exclude, method="REML")
+
+m1 = gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+           aggregate_stability * soil_texture_clay + 
+           active_carbon + 
+           + + ph * soil_texture_clay, 
+         data = data, 
+         na.action = na.exclude, 
+         method = "REML")
 summary(m1)
-anova(m1)
 
 F_Final <- fitted(m1)
 R_Final <- residuals(m1, type = "pearson", scaled = TRUE)

@@ -123,11 +123,21 @@ corrplot(cordata)
 
 #test without random effect, because only one value per field
 
-m1P=gls(mgCpergSoilP~ppt.cm*soil_texture_clay+
-          soil_texture_clay*tmeanC+ppt.cm*tmeanC+aggregate_stability*soil_texture_clay+aggregate_stability*ppt.cm+aggregate_stability*tmeanC+active_carbon+ 
+m1P=gls(mgCpergSoilP~ppt.cm*tmeanC+soil_texture_clay+
+          +aggregate_stability+active_carbon+ 
           ph, data=data, na.action=na.exclude, method="ML")
 summary(m1P)
-anova(m1P)
+
+mPtest=gls(mgCpergSoilP~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+  aggregate_stability * soil_texture_clay + 
+  active_carbon + 
+  + + ph * soil_texture_clay, data=data, na.action=na.exclude, method="ML")
+summary(mPtest)
+
+m2P=gls(mgCpergSoilP~ppt.cm*tmeanC+soil_texture_clay+
+          +aggregate_stability+active_carbon, data=data, na.action=na.exclude, method="ML")
+summary(m2P)
+anova(m1P, m2P)
 
 m1P2=gls(mgCpergSoilP~ppt.cm+soil_texture_clay+
          tmeanC+aggregate_stability+active_carbon+ 

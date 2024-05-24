@@ -242,11 +242,18 @@ head(cordata)
 ##Linear Mixed Model for dependent variable (propM)
 #test without random effect, because only one value per field
 
-m1M=gls(logitpropM~ppt.cm*tmeanC+ ppt.cm*soil_texture_clay +soil_texture_clay*
-          tmeanC+aggregate_stability*ppt.cm+ aggregate_stability*soil_texture_clay +aggregate_stability*tmeanC+active_carbon+ 
-          ph, data=data, na.action=na.exclude, method="ML")
+m1M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+          aggregate_stability * soil_texture_clay + 
+          active_carbon + 
+          + ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
 summary(m1M)
 anova(m1M)
+
+m2M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+          aggregate_stability + 
+          active_carbon + 
+          + + ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
+summary(m2M)
 
 
 m1M2=gls(logitpropM~ppt.cm*soil_texture_clay+
@@ -318,7 +325,8 @@ anova(m1propM)
 m1aM=gls(logitpropM~ppt.cm+soil_texture_clay+
           tmeanC+aggregate_stability+active_carbon+ 
           ph, data=data, na.action=na.exclude, weights = varFixed(~propM), method="ML")
-anova(m1M, m1aM) #adding variance structure does not improve the model
+
+anova(m1M, m2M) #adding variance structure does not improve the model
 
 m2M=gls(propM~ppt.cm+soil_texture_clay+
          tmeanC+aggregate_stability+active_carbon+ 
