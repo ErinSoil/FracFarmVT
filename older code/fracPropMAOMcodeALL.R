@@ -247,7 +247,7 @@ m1M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC +
           active_carbon + 
           + ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
 summary(m1M)
-anova(m1M)
+anova(m1M, m2M)
 
 m2M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
           aggregate_stability + 
@@ -534,6 +534,61 @@ hist(logit_transformed, main = "Histogram of propM", xlab = "propM Values", ylab
 
 #view PropM data
 View(data)
+
+#plot significant interactions
+pred_tmeanC <- ggpredict(m1M, terms = c("tmeanC"))
+pred_ppt <- ggpredict(m1M, terms = c("ppt.cm"))
+data <- data %>%
+  drop_na(tmeanC) %>% 
+  dplyr::mutate(tmean_group = cut(tmeanC, breaks = c(4.5,7.2,8.6)))
+
+levels(data$tmean_group) <- c("low (4.5-7.2)",  
+                             "high (7.2-8.6)")
+
+data <- data %>%
+  drop_na(ppt.cm) %>% 
+  dplyr::mutate(ppt_group = cut(ppt.cm, breaks = c(92,104,142)))
+
+levels(data$ppt_group) <- c("low (92-104)",  
+                              "high (104-142)")
+logitPropM_pptC_clay <-data %>% 
+  ggplot() +
+  geom_point(aes(x = soil_texture_clay, y = logitPropM, col = ppt_group), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_ppt, mapping = aes(x=x, y=predicted, col = ppt_group), #plot the model's prediction (based on linear )
+            lwd = 1) +
+ 
+  ggplot() +
+  geom_point(aes(x = soil_texture_clay, y = logitPropM, col = tmean_group), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_tmeanC, mapping = aes(x=x, y=predicted, col = tmean_group), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  #theme(legend.position = "none") +
+  scale_y_continuous(expression("logit proportion MAOM")) +
+  scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
+                     label = scales::comma) +
+  scale_color_manual(values = c("blue", "red")) # adjust colors if needed
+
+logitPropM_pptC_clay
+
+
+#try again 3 way interaction
+
+library(ggplot2)
+library(ggeffects)
+library(dplyr)
+
+pred_interaction <- ggpredict(m1M, terms = c("soil_texture_clay", "ppt.cm", "tmeanC"))
+
+data <- data %>%
+  drop_na(tmeanC, ppt.cm) %>% 
+  dplyr::mutate(
+    tmean_group = cut(tmeanC, breaks = c(4.5, 7.2, 8.6), labels = c("low (4.5-7.2)", "high (7.2-8.6)")),
+    ppt_group = cut(ppt.cm, breaks = c(92, 104, 142), labels = c("low (92-104)", "high (104-142)"))
+  )
+
+
 
 #export all plots #still looking for code that works for this!
 

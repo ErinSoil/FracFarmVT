@@ -1,0 +1,430 @@
+#Creating Linear Models and Graphing Relationships with Proporation of MAOM
+
+#setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
+setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
+
+#load your libraries
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(corrplot)
+library(emmeans)
+library(nlme)
+library(gtools)
+library(ggeffects)
+
+
+
+#calculate propMOAM
+#data <- data %>%
+ # mutate(propM = gCarbonM/(gCarbonM+ gCarbonP))
+
+#transform data logit
+#data <- data %>%
+ # dplyr::mutate(logitpropM = logit(propM))
+#write.csv(data,"data.csv")
+#hist(data$logitpropM)
+#summary(data$logitpropM)
+#hist(data$propM, main = "Histogram of propM", xlab = "propM Values", ylab = "Frequency")
+#hist(data$logit, main = "Histogram of logitpropM", xlab = "propM Values", ylab = "Frequency")               
+
+
+#linear model
+#First, graphically explore relationships among variables
+#look for interactions between independent variables
+
+summary(data$soil_texture_clay)
+data <- data %>% 
+  mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+ggplot(data=data, aes(x=tmeanC, y=logitpropM, col=soil_texture_clay))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ claycategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+ggplot(data=data, aes(x=ppt.cm, y=logitpropM, col=soil_texture_clay))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ claycategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+ggplot(data=data, aes(x=ph, y=logitpropM, col=soil_texture_clay))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ claycategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+ggplot(data=data, aes(x=aggregate_stability, y=logitpropM, col=soil_texture_clay))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ claycategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(claycategory=cut(soil_texture_clay, breaks=c(-Inf, 14, 24, Inf), labels=c("low","med", "high")))
+ggplot(data=data, aes(x=active_carbon, y=logitpropM, col=soil_texture_clay))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ claycategory, ncol=1, scales="free_x")
+
+#more interactions with ph
+summary(data$ph)
+
+data <- data %>% 
+  mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=tmeanC, y=logitpropM, col=ph))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ phcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=ppt.cm, y=logitpropM, col=ph))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ phcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=aggregate_stability, y=logitpropM, col=ph))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ phcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=soil_texture_clay, y=logitpropM, col=ph))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ phcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(phcategory=cut(ph, breaks=c(-Inf,6,7, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=active_carbon, y=logitpropM, col=ph))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ phcategory, ncol=1, scales="free_x")
+
+#interactions with ppt
+summary(data$ppt.cm)
+data <- data %>% 
+  mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 110.0, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=tmeanC, y=logitpropM, col=ppt.cm))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ pptcategory, ncol=1, scales="free_x")
+
+
+data <- data %>% 
+  mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 110.0, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=aggregate_stability, y=logitpropM, col=ppt.cm))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ pptcategory, ncol=1, scales="free_x")
+
+
+data <- data %>% 
+  mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 110.0, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=tmeanC, y=logitpropM, col=ppt.cm))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ pptcategory, ncol=1, scales="free_x")
+
+
+data <- data %>% 
+  mutate(pptcategory=cut(ppt.cm, breaks=c(-Inf,101.4, 110.0, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=active_carbon, y=logitpropM, col=ppt.cm))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ pptcategory, ncol=1, scales="free_x")
+
+#interactions with aggregate stability
+summary(data$aggregate_stability)
+
+data <- data %>% 
+  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=ph, y=logitpropM, col=aggregate_stability))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ agStcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=ppt.cm, y=logitpropM, col=aggregate_stability))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ agStcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=tmeanC, y=logitpropM, col=aggregate_stability))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ agStcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=soil_texture_clay, y=logitpropM, col=aggregate_stability))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ agStcategory, ncol=1, scales="free_x")
+
+data <- data %>% 
+  mutate(agStcategory=cut(aggregate_stability, breaks=c(-Inf,29.3, 65.6, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=active_carbon, y=logitpropM, col=aggregate_stability))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ agStcategory, ncol=1, scales="free_x")
+
+#tmeanC and active carbon
+summary(data$tmeanC)
+
+data <- data %>% 
+  mutate(tmeanCcategory=cut(tmeanC, breaks=c(-Inf,6.8, 7.6, Inf), labels=c("low","med","high")))
+ggplot(data=data, aes(x=active_carbon, y=logitpropM, col=tmeanC))+ 
+  geom_point()+
+  geom_smooth(method=lm)+
+  facet_wrap(~ tmeanCcategory, ncol=1, scales="free_x")
+
+#Correlation plot
+cordata <- cor(data[,c("mgCpergSoilP", "mgCpergSoilM", "logitpropM","ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
+corrplot(cordata)
+view(cordata)
+head(cordata)
+
+##Linear Mixed Model for dependent variable (logitpropM)
+#test without random effect, because only one value per field
+#drop non significant predictors until all are significant as model selection, m4M is the choice
+
+m1M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+          aggregate_stability * soil_texture_clay + 
+          active_carbon + 
+          + ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
+summary(m1M)
+
+m2M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+          aggregate_stability + 
+          active_carbon + 
+          ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
+summary(m2M)
+
+anova(m1M, m2M)
+
+m3M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+                  active_carbon + 
+          + ph * soil_texture_clay, data=data, na.action=na.exclude, method="ML")
+summary(m3M)
+anova(m2M, m3M)
+
+#we can use m4M, AIC is lower
+m4M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+          active_carbon, 
+          data=data, na.action=na.exclude, method="ML")
+summary(m4M)
+anova(m3M, m4M)
+
+#yikes, nothing is significant and the AIC went up significantly
+m5M=gls(logitpropM~ppt.cm * soil_texture_clay+ 
+          active_carbon, 
+        data=data, na.action=na.exclude, method="ML")
+summary(m5M)
+anova(m4M, m5M)
+
+#check assumptions, distrubution of residuals
+
+F_Final <- fitted(m4M)
+R_Final <- residuals(m4M, type = "pearson", scaled = TRUE)
+N = !is.na(data$logitpropM)
+Rfull <- NA
+Rfull[N] <- R_Final
+op <- par(mfrow = c(2,2), mar = c(5,4,1,1))  
+plot(F_Final, R_Final)
+hist(Rfull)
+plot(Rfull ~ data$aggregate_stability)
+plot(Rfull ~ data$soil_texture_clay)
+plot(Rfull ~ data$active_carbon)
+plot(Rfull ~ data$tmeanC)
+plot(Rfull ~ data$ppt.cm)
+plot(Rfull ~ data$ph)
+par(op)
+
+#partial residuals to test that the relationship is linear
+#do these for each of the significant predictors (do green and red lines match?)
+
+op <- par(mfrow = c(2,2), mar = c(5,4,1,1)) #this makes it so all the graphs are plotted in the same window (a 2 x 2 grid)
+
+ppt.cm.c <- summary(m4M)$coefficients[2] #predictor coefficient
+ppt.cm.pr <- Rfull + ppt.cm.c*data$ppt.cm  #Residuals + pred coef * predictor value
+{scatter.smooth(data$ppt.cm, ppt.cm.pr, 
+                lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
+  abline(lm(ppt.cm.c*data$ppt.cm ~ data$ppt.cm), col = "red")} 
+
+soil_texture_clay.c <- summary(m4M)$coefficients[3] #predictor coefficient
+soil_texture_clay.pr <- Rfull + soil_texture_clay.c*data$soil_texture_clay  #Residuals + pred coef * predictor value
+{scatter.smooth(data$soil_texture_clay, soil_texture_clay.pr, 
+                lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
+  abline(lm(soil_texture_clay.c*data$soil_texture_clay ~ data$soil_texture_clay), col = "red")} 
+
+aggregate_stability.c <- summary(m4M)$coefficients[5] #predictor coefficient
+aggregate_stability.pr <- Rfull + aggregate_stability.c*data$aggregate_stability  #Residuals + pred coef * predictor value
+{scatter.smooth(data$aggregate_stability, aggregate_stability.pr, 
+                lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
+  abline(lm(aggregate_stability.c*data$aggregate_stability ~ data$aggregate_stability), col = "red")} 
+
+active_carbon.c <- summary(m4M)$coefficients[6] #predictor coefficient
+active_carbon.pr <- Rfull + active_carbon.c*data$active_carbon  #Residuals + pred coef * predictor value
+{scatter.smooth(data$active_carbon, active_carbon.pr, 
+                lpars = list(col = "green", lwd = 3, lty = 3)) #residual loess
+  abline(lm(active_carbon.c*data$active_carbon ~ data$active_carbon), col = "red")} 
+
+par(op)
+
+#Visualize significant relationships
+
+#own_theme below sets ggplot parameters for how plots should look. 
+own_theme <- theme_bw(base_size = 11) +
+  theme(rect = element_blank(),
+        axis.ticks = element_line(color = "black"),
+        axis.text = element_text(color = "black"),
+        axis.line = element_line(color = "black"),
+        panel.grid.minor = element_blank())
+
+
+#for clay
+pred_soil_texture_clay <- ggpredict(m4M, terms = c("soil_texture_clay"))
+propMAOM_soil_texture_clay <-data %>% 
+  ggplot() +
+  geom_point(aes(x = soil_texture_clay, y = propM), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_soil_texture_clay, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  theme(legend.position = "none") +
+  scale_y_continuous(expression("logit prop C in MAOM"))+
+  scale_x_continuous(expression("percent clay texture"),
+                     label = scales::comma) 
+propMAOM_soil_texture_clay
+ggsave("propMAOM_soil_texture_clay.jpeg", width = 4, height = 3)
+
+#interaction ppt and clay
+summary(data$ppt.cm)
+
+summary(data$soil_texture_clay)
+
+pred_pptClay <- ggpredict(m4M, terms = c("ppt.cm", "soil_texture_clay[14.158,23.925]"))
+
+pred_pptClay$clay_group <- pred_pptClay$group
+levels(pred_pptClay$clay_group) <- c("low (6-19)",  
+                                   "high (19.01-54)")
+data <- data %>%
+  drop_na(soil_texture_clay) %>% 
+  dplyr::mutate(clay_group = cut(soil_texture_clay, breaks = c(6,19,54)))
+
+levels(data$clay_group) <- c("low (6-19)",  
+                              "high (19.01-54)")
+
+PropM_pptClay <-data %>% 
+  ggplot() +
+  geom_point(aes(x = ppt.cm, y = logitpropM, col = clay_group), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_pptClay, mapping = aes(x=x, y=predicted, col = clay_group), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  #theme(legend.position = "none") +
+  scale_y_continuous(expression("logit Prop MAOM")) +
+  scale_x_continuous(expression("Mean Annual Precipitation (cm)"),
+                     label = scales::comma) +
+  scale_color_manual(values = c("blue", "red")) # adjust colors if needed
+
+PropM_pptClay
+
+#now try clay and ppt reversed
+
+pred_Clayppt <- ggpredict(m4M, terms = c("soil_texture_clay", "ppt.cm[101,106]"))
+
+pred_Clayppt$ppt_group <- pred_Clayppt$group
+levels(pred_Clayppt$ppt_group) <- c("low (92-103)",  
+                                     "high (103-142)")
+data <- data %>%
+  drop_na(ppt.cm) %>% 
+  dplyr::mutate(ppt_group = cut(ppt.cm, breaks = c(92,101,141)))
+
+levels(data$ppt_group) <- c("low (92-103)",  
+                                     "high (103-142)")
+PropM_Clayppt <-data %>% 
+  ggplot() +
+  geom_point(aes(x = soil_texture_clay, y = logitpropM, col = ppt_group), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_Clayppt, mapping = aes(x=x, y=predicted, col = ppt_group), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  #theme(legend.position = "none") +
+  scale_y_continuous(expression("logit Prop MAOM")) +
+  scale_x_continuous(expression("Percent Clay- Soil Texture"),
+                     label = scales::comma) +
+  scale_color_manual(values = c("blue", "red")) # adjust colors if needed
+
+PropM_Clayppt
+
+
+#interaction tmean and clay
+summary(data$tmeanC)
+
+summary(data$soil_texture_clay)
+
+pred_tempClay <- ggpredict(m4M, terms = c("tmeanC", "soil_texture_clay[14.158,23.925]"))
+
+pred_tempClay$clay_group <- pred_tempClay$group
+levels(pred_tempClay$clay_group) <- c("low (6-19)",  
+                                     "high (19.01-54)")
+data <- data %>%
+  drop_na(soil_texture_clay) %>% 
+  dplyr::mutate(clay_group = cut(soil_texture_clay, breaks = c(6,19,54)))
+
+levels(data$clay_group) <- c("low (6-19)",  
+                             "high (19.01-54)")
+
+PropM_tempClay <-data %>% 
+  ggplot() +
+  geom_point(aes(x = tmeanC, y = logitpropM, col = clay_group), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_tempClay, mapping = aes(x=x, y=predicted, col = clay_group), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  #theme(legend.position = "none") +
+  scale_y_continuous(expression("logit Prop MAOM")) +
+  scale_x_continuous(expression("Mean Annual Temperature (C)"),
+                     label = scales::comma) +
+  scale_color_manual(values = c("blue", "red")) # adjust colors if needed
+
+PropM_tempClay
+
+#now try clay and tmean reversed
+
+pred_Claytemp <- ggpredict(m4M, terms = c("soil_texture_clay", "tmeanC[6.7,7.6]"))
+
+pred_Claytemp$temp_group <- pred_Claytemp$group
+levels(pred_Claytemp$temp_group) <- c("low (4-7.2)",  
+                                    "high (7.201-9)")
+data <- data %>%
+  drop_na(tmeanC) %>% 
+  dplyr::mutate(temp_group = cut(tmeanC, breaks = c(4.5,7.2,8.5)))
+
+levels(data$temp_group) <- c("low (4-7.2)",  
+                             "high (7.201-9)")
+PropM_Claytemp <-data %>% 
+  ggplot() +
+  geom_point(aes(x = soil_texture_clay, y = logitpropM, col = temp_group), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_Claytemp, mapping = aes(x=x, y=predicted, col = temp_group), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  own_theme+
+  #theme(legend.position = "none") +
+  scale_y_continuous(expression("logit Prop MAOM")) +
+  scale_x_continuous(expression("Percent Clay- Soil Texture"),
+                     label = scales::comma) +
+  scale_color_manual(values = c("blue", "red")) # adjust colors if needed
+
+PropM_Claytemp

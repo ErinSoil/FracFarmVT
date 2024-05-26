@@ -255,7 +255,6 @@ pred_pptC <- ggpredict(m1P, terms = c("ppt.cm", "tmeanC[6.8,7.5]"))
 pred_pptC$tmean_group <- pred_pptC$group
 levels(pred_pptC$tmean_group) <- c("low (4.5-7.2)",  
                                      "high (7.2-8.6)")
-
 data <- data %>%
   drop_na(tmeanC) %>% 
   dplyr::mutate(tmean_group = cut(tmeanC, breaks = c(4.5,7.2,8.6)))
@@ -282,12 +281,9 @@ ggsave("mgPOM_ppt_tmeanC.jpeg", width = 4, height = 3)
 
 
 #ppt and tmeanC, option 2
-summary(data$ppt.cm)
 
 pred_tmeanC <- ggpredict(m1P, terms = c("tmeanC","ppt.cm[101,110]"))
-
 plot(pred_tmeanC, show_data = TRUE, dot_alpha = 0.8, alpha = 0.3, limit_range = TRUE)
-
 pred_tmeanC$ppt_group <- pred_tmeanC$group
 levels(pred_tmeanC$ppt_group) <- c("low (92-104)",  
                                    "high (104-142)")
@@ -298,10 +294,20 @@ data <- data %>%
 
 levels(data$ppt_group) <- c("low (92-104)",  
                               "high (104-142)")
+pred_ppt.cm <- ggpredict(m1P, terms = c("ppt.cm", "tmeanC[6.8,7.5]"))
 
-mgPOM_tmeanC <-data %>% 
+pred_pptC$tmean_group <- pred_pptC$group
+levels(pred_pptC$tmean_group) <- c("low (4.5-7.2)",  
+                                   "high (7.2-8.6)")
+logitPropM_tmeanC <-data %>% 
   ggplot() +
-  geom_point(aes(x = tmeanC, y = mgCpergSoilP, col = ppt_group), #plot your data
+  geom_point(aes(x = tmeanC, y = logitPropM, col = ppt_group), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_tmeanC, mapping = aes(x=x, y=predicted, col = ppt_group), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  logitPropM_ppt <-data %>% 
+  ggplot() +
+  geom_point(aes(x = ppt, y = logitPropM, col = ppt_group), #plot your data
              size = 1.5, alpha = 0.5) +
   geom_line(pred_tmeanC, mapping = aes(x=x, y=predicted, col = ppt_group), #plot the model's prediction (based on linear )
             lwd = 1) +
