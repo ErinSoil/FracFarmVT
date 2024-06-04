@@ -1,7 +1,7 @@
 #Analyzing data and Buildin models for response variable MgMAOM
 
-#setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
-setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
+setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
+#setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
 
 #load your libraries
 library(tidyverse)
@@ -185,33 +185,34 @@ view(cordata)
 
 m1 = gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
            aggregate_stability * soil_texture_clay + 
-           active_carbon + 
-           + + ph * soil_texture_clay, 
+           active_carbon + ph * soil_texture_clay, 
          data = data, 
          na.action = na.exclude, 
          method = "ML")
 summary(m1)
+anova(m1)
 
 #check if variance structure improves the model (to test, both methods were set to REML)
 
 m2 = gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
-           active_carbon + ph * soil_texture_clay +aggregate_stability, 
+           active_carbon + ph * soil_texture_clay + aggregate_stability, 
          data = data, 
          na.action = na.exclude, 
          method = "ML")
 summary(m2)
+anova(m2)
 
 
 anova (m1,m2)
 
 m3 = gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
-           active_carbon +aggregate_stability, 
+           active_carbon + aggregate_stability, 
          data = data, 
          na.action = na.exclude, 
          method = "ML")
 summary(m3)
 anova (m2,m3)
-
+anova(m3)
 
 #check assumptions, distribution of residuals
 
@@ -295,10 +296,11 @@ mgMAOM_aggregate_stability <-data %>%
 mgMAOM_aggregate_stability
 ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)
                    
-  #for active_carbon
-  pred_active_carbon <- ggpredict(m3, terms = c("active_carbon"))
-         mgMAOM_active_carbon <-data %>% 
-            ggplot() +
+#for active_carbon
+pred_active_carbon <- ggpredict(m3, terms = c("active_carbon"))
+
+mgMAOM_active_carbon <-data %>% 
+          ggplot() +
           geom_point(aes(x = active_carbon, y = mgCpergSoilM), #plot your data
                                 size = 1.5, alpha = 0.5) +
           geom_line(pred_active_carbon, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
@@ -309,9 +311,52 @@ ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)
                      scale_x_continuous(expression("active carbon"),
                                         label = scales::comma) 
                    mgMAOM_active_carbon
-                   ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
+ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
                    
-      #for 3 way interaction
+#for 3 way interaction of tmean, ppt, and texture
+
+summary(data$soil_texture_clay)
+summary(data$ppt.cm)
+pred_3way <- ggpredict(m3, terms = c("tmeanC","ppt.cm[101,110]", 
+  "soil_texture_clay[10, 32]"))
+
+pred_3way$ppt_group <- pred_3way$group
+levels(pred_3way$ppt_group) <- c("low (92-104)",  
+                                   "high (104-142)")
+pred_3way$clay_facet <- pred_3way$facet
+levels(pred_3way$clay_facet) <- c("low clay (6-19%)",  
+                                   "high clay (19-54%)")
+
+data <- data %>%
+  drop_na(ppt.cm) %>% 
+  drop_na(soil_texture_clay) %>% 
+  dplyr::mutate(ppt_group = cut(ppt.cm, breaks = c(92,104,142)),
+                clay_facet = cut(soil_texture_clay, breaks = c(6,19,54)))
+
+levels(data$ppt_group) <- c("low (92-104)",  
+                            "high (104-142)")
+ 
+levels(data$clay_facet) <- c("low clay (6-19%)",  
+                                   "high clay (19-54%)")
+
+mgMAOM_3way <-data %>% 
+   ggplot() +
+   geom_point(aes(x = tmeanC, y = mgCpergSoilM, col = ppt_group), #plot your data
+              size = 1.5, alpha = 0.5) +
+   geom_line(pred_3way, mapping = aes(x=x, y=predicted, col = ppt_group), #plot the model's prediction (based on linear )
+             lwd = 1) +
+   facet_wrap(~clay_facet) +
+   own_theme+
+   #theme(legend.position = "none") +
+   scale_y_continuous(expression(paste("mg MAOM C g"^-1,"soil"))) +
+   scale_x_continuous(expression("Mean Annual Temperature (°C)"),
+                      label = scales::comma) +
+   guides(col=guide_legend(title="MAP (cm)")) +
+   scale_color_manual(values = c("lightblue", "blue")) # adjust colors if needed
+ 
+mgMAOM_3way
+ggsave("mgMAOM_3way.jpeg", width = 6.5, height = 3)
+                   
                    
                    
    #analyze data by field type. group by and color by field type this code is in progress
