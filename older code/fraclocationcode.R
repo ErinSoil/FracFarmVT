@@ -11,6 +11,7 @@ library(openmeteo)
 
 ##call in the analytical data
 Loc <- read.csv(file="Location.csv", header=TRUE, sep=",")
+data <- read.csv("data.csv")
 
 weather_history(
   c(44.98630, -73.30327), 
@@ -20,7 +21,17 @@ weather_history(
 )
   apply(array, margin, ...)
   
-# work with Nclimgrid data  
+  m1 = gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+             aggregate_stability * soil_texture_clay + 
+             active_carbon + 
+             + + ph * soil_texture_clay, 
+           data = data, 
+           na.action = na.exclude, 
+           method = "ML")
+  summary(m1)
+  
+  
+  # work with Nclimgrid data  
 library(raster)
   
 r <- brick("nclimgrid_tavg.nc")
@@ -134,3 +145,87 @@ xy <- SpatialPoints(cbind(-81.8125, 24.5625))
          y = "Latitude",
          color = "logit Proportion MAOM") +  # Add color legend title
     theme_minimal()
+  
+  library(dplyr)
+  
+  # join tables
+  data2 <- data %>%
+    left_join(Loc, by = "Field_Code")
+  
+  view(data2)
+  
+  #correlation plots
+  library(corrplot)
+  cordata <- cor(data[,c("mgCpergSoilM","ph","ppt.cm","Latitude", "Longitude", "tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
+  corrplot(cordata)
+  view(cordata)  
+
+  
+  #look at the unexplained varibility in the models to see if lat/long can explain
+  library(nlme)
+  m3 = gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+             active_carbon +aggregate_stability, 
+           data = data, 
+           na.action = na.exclude, 
+           method = "ML")
+  
+  
+  F_Final <- fitted(m3)
+  R_Final <- residuals(m3, type = "pearson", scaled = TRUE)
+  N = !is.na(data$mgCpergSoilM)
+  Rfull <- NA
+  Rfull[N] <- R_Final
+  op <- par(mfrow = c(2,2), mar = c(5,4,1,1))  
+  plot(F_Final, R_Final)
+  hist(Rfull)
+  plot(Rfull ~ data2$aggregate_stability)
+  plot(Rfull ~ data2$soil_texture_clay)
+  plot(Rfull ~ data2$active_carbon)
+  plot(Rfull ~ data2$tmeanC)
+  plot(Rfull ~ data2$ppt.cm)
+  plot(Rfull ~ data2$Latitude)
+  plot(Rfull ~ data2$ph)
+  plot(Rfull ~ data2$Longitude)
+  par(op)
+  
+  
+  m4M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+            active_carbon, 
+          data=data, na.action=na.exclude, method="ML")
+  
+  F_Final <- fitted(m4M)
+  R_Final <- residuals(m4M, type = "pearson", scaled = TRUE)
+  N = !is.na(data2$logitpropM)
+  Rfull <- NA
+  Rfull[N] <- R_Final
+  op <- par(mfrow = c(2,2), mar = c(5,4,1,1))  
+  plot(F_Final, R_Final)
+  hist(Rfull)
+  plot(Rfull ~ data2$aggregate_stability)
+  plot(Rfull ~ data2$soil_texture_clay)
+  plot(Rfull ~ data2$active_carbon)
+  plot(Rfull ~ data2$tmeanC)
+  plot(Rfull ~ data2$ppt.cm)
+  plot(Rfull ~ data2$ph)
+  plot(Rfull ~ data2$Latitude)
+  plot(Rfull ~ data2$Longitude)
+  par(op)
+  
+  m3P=gls(mgCpergSoilP~ppt.cm*tmeanC
+          +aggregate_stability+active_carbon,
+          data=data, na.action=na.exclude, method="REML") 
+  
+  
+  F_Final <- fitted(m3P)
+  R_Final <- residuals(m3P, type = "pearson", scaled = TRUE)
+  N = !is.na(data2$mgCpergSoilP)
+  Rfull <- NA
+  Rfull[N] <- R_Final
+  op <- par(mfrow = c(2,2), mar = c(5,4,1,1))  
+  plot(F_Final, R_Final)
+  hist(Rfull)
+
+  plot(Rfull ~ data2$Latitude)
+  plot(Rfull ~ data2$Longitude)
+  par(op)
+  

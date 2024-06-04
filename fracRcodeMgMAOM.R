@@ -175,6 +175,7 @@ ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilM, col=tmeanC))+
 
 #Models
 #Correlation plot
+library(corrplot)
 cordata <- cor(data[,c("mgCpergSoilM","ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
 corrplot(cordata)
 view(cordata)
