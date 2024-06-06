@@ -1,7 +1,7 @@
 #Analyzing data and Buildin models for response variable MgMAOM
 
-setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
-#setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
+#setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
+setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
 
 #load your libraries
 library(tidyverse)

@@ -204,7 +204,7 @@ m1M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC +
           + ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
 summary(m1M)
 
-m2M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+m2M=gls(C~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
           aggregate_stability + 
           active_carbon + 
           ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
@@ -428,3 +428,47 @@ PropM_Claytemp <-data %>%
   scale_color_manual(values = c("blue", "red")) # adjust colors if needed
 
 PropM_Claytemp
+
+
+#for 3 way interaction of tmean, ppt, and texture
+
+pred_3way <- ggpredict(m4M, terms = c("tmeanC","ppt.cm[101,110]", 
+                                     "soil_texture_clay[10, 32]"))
+
+pred_3way$ppt_group <- pred_3way$group
+levels(pred_3way$ppt_group) <- c("low (92-104)",  
+                                 "high (104-142)")
+pred_3way$clay_facet <- pred_3way$facet
+levels(pred_3way$clay_facet) <- c("low clay (6-19%)",  
+                                  "high clay (19-54%)")
+
+data <- data %>%
+  drop_na(ppt.cm) %>% 
+  drop_na(soil_texture_clay) %>% 
+  dplyr::mutate(ppt_group = cut(ppt.cm, breaks = c(92,104,142)),
+                clay_facet = cut(soil_texture_clay, breaks = c(6,19,54)))
+
+levels(data$ppt_group) <- c("low (92-104)",  
+                            "high (104-142)")
+
+levels(data$clay_facet) <- c("low clay (6-19%)",  
+                             "high clay (19-54%)")
+
+propMAOM_3way <-data %>% 
+  ggplot() +
+  geom_point(aes(x = tmeanC, y = logitpropM, col = ppt_group), #plot your data
+             size = 1.5, alpha = 0.5) +
+  geom_line(pred_3way, mapping = aes(x=x, y=predicted, col = ppt_group), #plot the model's prediction (based on linear )
+            lwd = 1) +
+  facet_wrap(~clay_facet) +
+  own_theme+
+  #theme(legend.position = "none") +
+  scale_y_continuous(expression(paste("logitpropM"))) +
+  scale_x_continuous(expression("Mean Annual Temperature (°C)"),
+                     label = scales::comma) +
+  guides(col=guide_legend(title="MAP (cm)")) +
+  scale_color_manual(values = c("lightblue", "blue")) # adjust colors if needed
+
+propMAOM_3way
+ggsave("propMAOM_3way.jpeg", width = 6.5, height = 3)
+
