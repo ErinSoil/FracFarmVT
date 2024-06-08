@@ -13,11 +13,15 @@ library(nlme)
 library(gtools)
 library(ggeffects)
 
+##call in the analytical data
+data <- read.csv("data.csv")
+data2 <- read.csv("data2.csv")
+view(data)
 
 
 #calculate propMOAM
-#data <- data %>%
- # mutate(propM = gCarbonM/(gCarbonM+ gCarbonP))
+data <- data %>%
+  mutate(propM = gCarbonM/(gCarbonM+ gCarbonP))
 
 #transform data logit
 #data <- data %>%
@@ -198,32 +202,33 @@ head(cordata)
 #test without random effect, because only one value per field
 #drop non significant predictors until all are significant as model selection, m4M is the choice
 
-m1M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
-          aggregate_stability * soil_texture_clay + 
-          active_carbon + 
-          + ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
-summary(m1M)
+#m1M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+ #         aggregate_stability * soil_texture_clay + 
+  #        active_carbon + 
+   #       + ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
+#summary(m1M)
 
-m2M=gls(C~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
-          aggregate_stability + 
-          active_carbon + 
-          ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
-summary(m2M)
+#m2M=gls(C~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+ #         aggregate_stability + 
+  #        active_carbon + 
+   #       ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
+#summary(m2M)
 
-anova(m1M, m2M)
+#anova(m1M, m2M)
 
 m3M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
                   active_carbon + 
           + ph * soil_texture_clay, data=data, na.action=na.exclude, method="ML")
 summary(m3M)
-anova(m2M, m3M)
+#anova(m2M, m3M)
 
-#we can use m4M, AIC is lower
-m4M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
-          active_carbon, 
-          data=data, na.action=na.exclude, method="ML")
-summary(m4M)
-anova(m3M, m4M)
+# Fit the GLS model 
+m4M <- gls(logitpropM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+             active_carbon, 
+           data = data, 
+           na.action = na.exclude, 
+           method = "ML")
+
 
 #yikes, nothing is significant and the AIC went up significantly
 m5M=gls(logitpropM~ppt.cm * soil_texture_clay+ 
@@ -472,3 +477,105 @@ propMAOM_3way <-data %>%
 propMAOM_3way
 ggsave("propMAOM_3way.jpeg", width = 6.5, height = 3)
 
+#R squared Code
+
+
+# Ensure all necessary variables are numeric
+data$logitpropM <- as.numeric(data$logitpropM)
+data$ppt.cm <- as.numeric(data$ppt.cm)
+data$soil_texture_clay <- as.numeric(data$soil_texture_clay)
+data$tmeanC <- as.numeric(data$tmeanC)
+data$active_carbon <- as.numeric(data$active_carbon)
+
+# Remove rows with any NA values in the relevant columns before fitting the model
+data_clean <- na.omit(data)
+
+# Fit your GLS model with cleaned data
+m4M <- gls(logitpropM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+             active_carbon, 
+           data = data_clean, 
+           method = "ML")
+
+
+# Ensure all necessary variables are numeric
+data$logitpropM <- as.numeric(data$logitpropM)
+data$ppt.cm <- as.numeric(data$ppt.cm)
+data$soil_texture_clay <- as.numeric(data$soil_texture_clay)
+data$tmeanC <- as.numeric(data$tmeanC)
+data$active_carbon <- as.numeric(data$active_carbon)
+
+# Remove rows with any NA values in the relevant columns before fitting the model
+data_clean <- na.omit(data)
+
+# Fit your GLS model with cleaned data
+m4M <- gls(logitpropM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+             active_carbon, 
+           data = data_clean, 
+           method = "ML")
+
+# Define the rsquared_gls function
+rsquared_gls <- function(model) {
+  # Extract fitted values
+  fitted_values <- fitted(model)
+  
+  # Extract response variable name
+  response_variable <- as.character(formula(model)[[2]])
+  
+  # Extract response values from the cleaned data
+  response_values <- model$data[[response_variable]]
+  
+  # Ensure the response variable is numeric
+  if (!is.numeric(response_values)) {
+    response_values <- as.numeric(as.character(response_values))
+  }
+  
+  # Debugging: Print initial response values and fitted values
+  cat("Initial response values:\n")
+  print(response_values)
+  cat("Fitted values:\n")
+  print(fitted_values)
+  
+  # Ensure no NA values are in the response values or fitted values
+  valid_indices <- !is.na(response_values) & !is.na(fitted_values)
+  response_values <- response_values[valid_indices]
+  fitted_values <- fitted_values[valid_indices]
+  
+  # Debugging: Print cleaned response values and fitted values
+  cat("Cleaned response values:\n")
+  print(response_values)
+  cat("Fitted values:\n")
+  print(fitted_values)
+  
+  # Verify lengths of response values and fitted values
+  if (length(response_values) != length(fitted_values)) {
+    stop("Length mismatch between response values and fitted values")
+  }
+  
+  # Calculate residuals
+  residuals <- response_values - fitted_values
+  
+  # Calculate the sum of squared residuals
+  ss_res <- sum(residuals^2)
+  
+  # Calculate the total sum of squares
+  ss_tot <- sum((response_values - mean(response_values))^2)
+  
+  # Debugging: Print sum of squared residuals and total sum of squares
+  cat("SS_res:", ss_res, "\n")
+  cat("SS_tot:", ss_tot, "\n")
+  
+  # Check for zero variance in response values
+  if (ss_tot == 0) {
+    warning("Total sum of squares is zero, resulting in NaN R-squared")
+    return(NaN)
+  }
+  
+  # Calculate R-squared
+  rsq <- 1 - (ss_res / ss_tot)
+  
+  return(rsq)
+}
+
+# Calculate and print R-squared
+rsquared_value <- rsquared_gls(m4M)
+print(rsquared_value)

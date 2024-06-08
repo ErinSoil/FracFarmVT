@@ -416,3 +416,71 @@ mgPOM_temp <-data %>%
 
 mgPOM_temp
 
+
+# Define the rsquared_gls function for model m3P
+rsquared_gls_m3P <- function(model) {
+  # Extract fitted values
+  fitted_values <- fitted(model)
+  
+  # Extract response variable name
+  response_variable <- as.character(formula(model)[[2]])
+  
+  # Extract response values from the original dataset used in the model fitting
+  response_values <- model$data[[response_variable]]
+  
+  # Ensure the response variable is numeric
+  if (!is.numeric(response_values)) {
+    response_values <- as.numeric(as.character(response_values))
+  }
+  
+  # Debugging: Print initial response values and fitted values
+  cat("Initial response values:\n")
+  print(response_values)
+  cat("Fitted values:\n")
+  print(fitted_values)
+  
+  # Ensure no NA values are in the response values or fitted values
+  valid_indices <- !is.na(response_values) & !is.na(fitted_values)
+  response_values <- response_values[valid_indices]
+  fitted_values <- fitted_values[valid_indices]
+  
+  # Debugging: Print cleaned response values and fitted values
+  cat("Cleaned response values:\n")
+  print(response_values)
+  cat("Fitted values:\n")
+  print(fitted_values)
+  
+  # Verify lengths of response values and fitted values
+  if (length(response_values) != length(fitted_values)) {
+    stop("Length mismatch between response values and fitted values")
+  }
+  
+  # Calculate residuals
+  residuals <- response_values - fitted_values
+  
+  # Calculate the sum of squared residuals
+  ss_res <- sum(residuals^2)
+  
+  # Calculate the total sum of squares
+  ss_tot <- sum((response_values - mean(response_values))^2)
+  
+  # Debugging: Print sum of squared residuals and total sum of squares
+  cat("SS_res:", ss_res, "\n")
+  cat("SS_tot:", ss_tot, "\n")
+  
+  # Check for zero variance in response values
+  if (ss_tot == 0) {
+    warning("Total sum of squares is zero, resulting in NaN R-squared")
+    return(NaN)
+  }
+  
+  # Calculate R-squared
+  rsq <- 1 - (ss_res / ss_tot)
+  
+  return(rsq)
+}
+
+# Calculate and print R-squared for model m3P
+rsquared_value_m3P <- rsquared_gls_m3P(m3P)
+print(rsquared_value_m3P)
+
