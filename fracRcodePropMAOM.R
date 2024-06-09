@@ -512,6 +512,18 @@ propMAOM_3way <-data %>%
 propMAOM_3way
 ggsave("propMAOM_3way.jpeg", width = 6.5, height = 3)
 
+
+
+# Create a violin plot with individual data points
+ggplot(data, aes(x = Type.x, y = logitpropM)) +
+  geom_violin(trim = FALSE, fill = "lightblue") +  # Create the violin plot
+  geom_jitter(width = 0.2, size = 1, color = "darkblue") +  # Add jittered points
+  labs(title = "Proporation of MAOM by Field Type",
+       x = "Field Type",
+       y = "MAOM Proportion (logit)") +
+  theme_minimal()  # Apply a minimal theme for a clean look              
+
+
 #R squared Code
 
 

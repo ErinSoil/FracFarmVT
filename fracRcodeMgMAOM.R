@@ -404,7 +404,7 @@ emtrends(m3,pairwise~ppt.cm*soil_texture_clay,var="tmeanC", at=mylist)
                    
    #analyze data by field type. group by and color by field type this code is in progress
     #exploration
-                   mgMAOM_active_carbonbyField <-data %>% 
+                   mgMAOM_active_carbonbyField <-data
                      ggplot() +
                      geom_point(aes(x = active_carbon, y = mgCpergSoilM, color=Type.x), 
                                 size = 1.5, alpha = 0.5) +
@@ -430,8 +430,17 @@ emtrends(m3,pairwise~ppt.cm*soil_texture_clay,var="tmeanC", at=mylist)
                    mgMAOM_agg_stability_byField
                    ggsave("mgMAOM_aggregrate_stability_byField.jpeg", width = 4, height = 3)
             
-                   
-                   # Define the rsquared_gls function for model m3
+# Create a violin plot with individual data points
+       ggplot(data, aes(x = Type.x, y = mgCpergSoilM)) +
+       geom_violin(trim = FALSE, fill = "lightblue") +  # Create the violin plot
+       geom_jitter(width = 0.2, size = 1, color = "darkblue") +  # Add jittered points
+       labs(title = "Distribution of mgCpergSoilM by Field Type",
+                          x = "Field Type",
+                          y = "mgC per g Soil M") +
+       theme_minimal()  # Apply a minimal theme for a clean look              
+      
+       
+                    # Define the rsquared_gls function for model m3
                    rsquared_gls_m3 <- function(model) {
                      # Extract fitted values
                      fitted_values <- fitted(model)

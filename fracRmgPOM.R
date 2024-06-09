@@ -436,6 +436,17 @@ mgPOM_temp <-data %>%
 mgPOM_temp
 
 
+# Create a violin plot with individual data points
+ggplot(data, aes(x = Type.x, y = mgCpergSoilP)) +
+  geom_violin(trim = FALSE, fill = "lightblue") +  # Create the violin plot
+  geom_jitter(width = 0.2, size = 1, color = "darkblue") +  # Add jittered points
+  labs(title = "Distribution of mg POM by Field Type",
+       x = "Field Type",
+       y = "mgC per g Soil POM") +
+  theme_minimal()  # Apply a minimal theme for a clean look              
+
+
+
 # Define the rsquared_gls function for model m3P
 rsquared_gls_m3P <- function(model) {
   # Extract fitted values
