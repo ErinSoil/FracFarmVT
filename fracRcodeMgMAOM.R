@@ -440,6 +440,18 @@ emtrends(m3,pairwise~ppt.cm*soil_texture_clay,var="tmeanC", at=mylist)
        theme_minimal()  # Apply a minimal theme for a clean look              
       
        
+       # Create a violin plot with individual data points and mean line
+       ggplot(data, aes(x = Type.x, y = mgCpergSoilM, color = Type.x, fill = Type.x)) +
+         geom_violin(trim = FALSE, alpha = 0.5) +  # Create the violin plot with semi-transparent fill
+         geom_jitter(width = 0.2, size = 1) +  # Add jittered points
+         stat_summary(fun = mean, geom = "point", shape = 23, size = 2, color = "black", fill = "yellow") +  # Add mean points
+         labs(title = "Distribution of mgCpergSoilM by Field Type",
+              x = "Field Type",
+              y = "mgC per g Soil M") +
+         theme_minimal()  # Apply a minimal theme for a clean look
+       
+       
+       
                     # Define the rsquared_gls function for model m3
                    rsquared_gls_m3 <- function(model) {
                      # Extract fitted values
