@@ -14,6 +14,46 @@ library(emmeans)
 
 ##call in the analytical data
 data <- read.csv("data.csv")
+view(data)
+
+#soil heath regression
+
+# Perform linear regression
+regression_model <- lm(mgCpergSoilM ~ overall.score, data = data)
+
+# Summarize the regression model
+summary(regression_model)
+
+# Create a plot with the regression line
+ggplot(data, aes(x = overall.score, y = mgCpergSoilM)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Linear Regression of mgCpergSoilM on overall.score",
+       x = "Overall Score",
+       y = "mgC per g Soil M") +
+  theme_minimal()
+
+
+
+# Perform linear regression try it the other way, to see!
+regression_model <- lm(overall.score ~ mgCpergSoilM, data = data)
+
+# Summarize the regression model
+summary(regression_model)
+
+# Create a plot with the regression line
+ggplot(data, aes(x = mgCpergSoilM, y = overall.score)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Linear Regression of mgCpergSoilM on overall.score",
+       x = "mgC per g Soil M",
+       y = "Soil Health Score") +
+  theme_minimal()
+
+
+
+
+
 
 
 #First, graphically explore relationships 

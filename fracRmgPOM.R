@@ -16,6 +16,25 @@ library(ggeffects)
 data <- read.csv("data.csv")
 View(data)
 
+#soil heath regression
+
+# Perform linear regression
+regression_model <- lm(mgCpergSoilP ~ overall.score, data = data)
+
+# Summarize the regression model
+summary(regression_model)
+
+# Create a plot with the regression line
+ggplot(data, aes(x = overall.score, y = mgCpergSoilP)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Linear Regression of mgCpergSoilP on overall.score",
+       x = "Overall Score",
+       y = "mgC per g Soil P") +
+  theme_minimal()
+
+
+
 #view na for ph: Z1, Z2 are truly NA
 missing_ph <- subset(data, is.na(ph) | ph == "")
 missing_field_codes <- missing_ph$Field_Code

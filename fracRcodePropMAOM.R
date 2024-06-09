@@ -33,6 +33,41 @@ data <- data %>%
 #hist(data$logit, main = "Histogram of logitpropM", xlab = "propM Values", ylab = "Frequency")               
 
 
+
+#soil heath regression
+
+# Perform linear regression
+regression_model <- lm(logitpropM ~ overall.score, data = data)
+
+# Summarize the regression model
+summary(regression_model)
+
+# Create a plot with the regression line
+ggplot(data, aes(x = overall.score, y = logitpropM)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Linear Regression of mgCpergSoilM on overall.score",
+       x = "Overall Score",
+       y = "logit proportion of MAOM") +
+  theme_minimal()
+
+
+# Perform linear regression
+regression_model <- lm(overall.score ~ logitpropM, data = data)
+
+# Summarize the regression model
+summary(regression_model)
+
+# Create a plot with the regression line
+ggplot(data, aes(x = logitpropM, y = overall.score)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Linear Regression of soil health score on logitpropM",
+       x = "Proportion of MAOM",
+       y = "overall soil health score") +
+  theme_minimal()
+
+
 #linear model
 #First, graphically explore relationships among variables
 #look for interactions between independent variables
