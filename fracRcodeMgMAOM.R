@@ -254,6 +254,11 @@ summary(m3)
 anova (m2,m3)
 anova(m3)
 
+#pseudo R squared calculation (fit between model predicted data and actual data)
+data$mgCpergSoilM.pred=as.vector(fitted(m3))
+R2=lm(mgCpergSoilM~mgCpergSoilM.pred, data=data, na.action=na.omit)
+summary(R2) #r2=0.36
+
 #check assumptions, distribution of residuals
 
 F_Final <- fitted(m3)
