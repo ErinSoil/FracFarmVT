@@ -16,7 +16,7 @@ library(ggeffects)
 data <- read.csv("data.csv")
 View(data)
 
-#soil heath regression
+#soil health regression
 
 # Perform linear regression
 regression_model <- lm(mgCpergSoilP ~ overall.score, data = data)
@@ -33,7 +33,10 @@ ggplot(data, aes(x = overall.score, y = mgCpergSoilP)) +
        y = "mgC per g Soil P") +
   theme_minimal()
 
-
+#Correlation plot
+cordata <- cor(data[,c("mgCpergSoilP","overall.score","mgCpergSoilM","logitpropM")], use="pairwise.complete.obs", method="pearson")
+corrplot(cordata)
+cordata
 
 #view na for ph: Z1, Z2 are truly NA
 missing_ph <- subset(data, is.na(ph) | ph == "")
@@ -524,3 +527,10 @@ rsquared_gls_m3P <- function(model) {
 rsquared_value_m3P <- rsquared_gls_m3P(m3P)
 print(rsquared_value_m3P)
 
+
+
+#anova by field type to see differences 
+field_anova<- aov(mgCpergSoilP~Type.x, data=data)
+summary(field_anova)  
+
+TukeyHSD(field_anova)

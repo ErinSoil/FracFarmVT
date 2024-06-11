@@ -34,7 +34,7 @@ data <- data %>%
 
 
 
-#soil heath regression
+#soil health regression
 
 # Perform linear regression
 regression_model <- lm(logitpropM ~ overall.score, data = data)
@@ -637,3 +637,10 @@ rsquared_gls <- function(model) {
 # Calculate and print R-squared
 rsquared_value <- rsquared_gls(m4M)
 print(rsquared_value)
+
+
+#anova by field type to see differences 
+field_anova<- aov(logitpropM~Type.x, data=data)
+summary(field_anova)  
+
+TukeyHSD(field_anova)
