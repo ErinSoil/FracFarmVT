@@ -16,7 +16,7 @@ library(emmeans)
 data <- read.csv("data.csv")
 view(data)
 
-#soil heath regression
+#soil health regression
 
 # Perform linear regression
 regression_model <- lm(mgCpergSoilM ~ overall.score, data = data)
