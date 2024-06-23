@@ -104,7 +104,7 @@ xy <- SpatialPoints(cbind(-81.8125, 24.5625))
                           labels = c("Low", "Moderate", "High", "Very High"),
                           limits = c(3, 48)) +  # Adjust limits based on your data
     coord_fixed(1.3) +  # Fix aspect ratio
-    labs(title = "Latitude and Longitude Points on the Map of Vermont",
+    labs(title = "Farm locations by levels of MAOM(mg)",
          x = "Longitude",
          y = "Latitude",
          color = "MgMAOM") +  # Add color legend title
@@ -120,7 +120,7 @@ xy <- SpatialPoints(cbind(-81.8125, 24.5625))
                           labels = c("Low", "Moderate", "High", "Very High"),
                           limits = c(2, 32)) +  # Adjust limits based on your data
     coord_fixed(1.3) +  # Fix aspect ratio
-    labs(title = "Latitude and Longitude Points on the Map of Vermont",
+    labs(title = "Farm locations by levels of POM(mg)",
          x = "Longitude",
          y = "Latitude",
          color = "MgPOM") +  # Add color legend title
@@ -140,7 +140,7 @@ xy <- SpatialPoints(cbind(-81.8125, 24.5625))
                           labels = c("Low", "Moderate", "High", "Very High"),
                           limits = c(-1, 2)) +  # Adjust limits based on your data
     coord_fixed(1.3) +  # Fix aspect ratio
-    labs(title = "Latitude and Longitude Points on the Map of Vermont",
+    labs(title = "Farm locations by proportion of MAOM",
          x = "Longitude",
          y = "Latitude",
          color = "logit Proportion MAOM") +  # Add color legend title

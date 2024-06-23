@@ -247,6 +247,30 @@ m3P=gls(mgCpergSoilP~ppt.cm*tmeanC
         , data=data, na.action=na.exclude, method="ML")
 summary(m3P)
 anova(m2P,m3P)
+anova(m3P)
+
+n <- nobs(m3P)
+print(n)
+
+
+# Perform ANOVA on the model
+anova_result <- anova(m3P)
+
+# Print the ANOVA table
+print(anova_result)
+
+# Extract the degrees of freedom for each variable
+num_df <- anova_result$"numDF"  # Numerator degrees of freedom
+den_df <- anova_result$"denDF"  # Denominator degrees of freedom
+
+# Print the degrees of freedom
+print(num_df)
+print(den_df)
+
+#pseudo R squared calculation (fit between model predicted data and actual data)
+data$mgCpergSoilP.pred=as.vector(fitted(m3P))
+R4=lm(mgCpergSoilP~mgCpergSoilP.pred, data=data, na.action=na.omit)
+summary(R4) #r2=.4825
 
 #check assumptions, distrubution of residuals
 #final model should use REML
@@ -458,75 +482,27 @@ ggplot(data, aes(x = Type.x, y = mgCpergSoilP, color = Type.x, fill = Type.x)) +
        y = "mgC per g Soil POM") +
   theme_minimal()  # Apply a minimal theme for a clean look
 
+# Create a violin plot with individual data points and mean line for soil texture class
+ggplot(data, aes(x = soil_texture_class, y = mgCpergSoilP, color = soil_texture_class, fill = soil_texture_class)) +
+  geom_violin(trim = FALSE, alpha = 0.5) +  # Create the violin plot with semi-transparent fill
+  geom_jitter(width = 0.2, size = 1) +  # Add jittered points
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 2, color = "black", fill = "yellow") +  # Add mean points
+  labs(title = "Distribution of mgCpergSoilP by Field Type",
+       x = "Soil Texture Class",
+       y = "mgC per g Soil POM") +
+  theme_minimal()  # Apply a minimal theme for a clean look
 
-
-# Define the rsquared_gls function for model m3P
-rsquared_gls_m3P <- function(model) {
-  # Extract fitted values
-  fitted_values <- fitted(model)
-  
-  # Extract response variable name
-  response_variable <- as.character(formula(model)[[2]])
-  
-  # Extract response values from the original dataset used in the model fitting
-  response_values <- model$data[[response_variable]]
-  
-  # Ensure the response variable is numeric
-  if (!is.numeric(response_values)) {
-    response_values <- as.numeric(as.character(response_values))
-  }
-  
-  # Debugging: Print initial response values and fitted values
-  cat("Initial response values:\n")
-  print(response_values)
-  cat("Fitted values:\n")
-  print(fitted_values)
-  
-  # Ensure no NA values are in the response values or fitted values
-  valid_indices <- !is.na(response_values) & !is.na(fitted_values)
-  response_values <- response_values[valid_indices]
-  fitted_values <- fitted_values[valid_indices]
-  
-  # Debugging: Print cleaned response values and fitted values
-  cat("Cleaned response values:\n")
-  print(response_values)
-  cat("Fitted values:\n")
-  print(fitted_values)
-  
-  # Verify lengths of response values and fitted values
-  if (length(response_values) != length(fitted_values)) {
-    stop("Length mismatch between response values and fitted values")
-  }
-  
-  # Calculate residuals
-  residuals <- response_values - fitted_values
-  
-  # Calculate the sum of squared residuals
-  ss_res <- sum(residuals^2)
-  
-  # Calculate the total sum of squares
-  ss_tot <- sum((response_values - mean(response_values))^2)
-  
-  # Debugging: Print sum of squared residuals and total sum of squares
-  cat("SS_res:", ss_res, "\n")
-  cat("SS_tot:", ss_tot, "\n")
-  
-  # Check for zero variance in response values
-  if (ss_tot == 0) {
-    warning("Total sum of squares is zero, resulting in NaN R-squared")
-    return(NaN)
-  }
-  
-  # Calculate R-squared
-  rsq <- 1 - (ss_res / ss_tot)
-  
-  return(rsq)
-}
-
-# Calculate and print R-squared for model m3P
-rsquared_value_m3P <- rsquared_gls_m3P(m3P)
-print(rsquared_value_m3P)
-
+# Create a violin plot with individual data points and mean line for soil texture class
+ggplot(data, aes(x = soil_texture_class, y = mgCpergSoilP, color = soil_texture_class, fill = soil_texture_class)) +
+  geom_violin(trim = FALSE, alpha = 0.5) +  # Create the violin plot with semi-transparent fill
+  geom_jitter(width = 0.2, size = 1) +  # Add jittered points
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 2, color = "black", fill = "yellow") +  # Add mean points
+  labs(title = "Distribution of mgCpergSoilP by Soil Texture Class",
+       x = "Soil Texture Class",
+       y = "mgC per g Soil POM") +
+  theme_minimal() +  # Apply a minimal theme for a clean look
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),  # Adjust text angle, justification, and size
+        plot.margin = margin(5, 5, 10, 5))  # Increase the bottom margin to give more space to labels
 
 
 #anova by field type to see differences 
@@ -534,3 +510,9 @@ field_anova<- aov(mgCpergSoilP~Type.x, data=data)
 summary(field_anova)  
 
 TukeyHSD(field_anova)
+
+#anova by soil texture class to see differences 
+texture_anova<- aov(mgCpergSoilP~soil_texture_class, data=data)
+summary(texture_anova)  
+
+TukeyHSD(texture_anova)

@@ -254,6 +254,9 @@ summary(m3)
 anova (m2,m3)
 anova(m3)
 
+n <- nobs(m3)
+print(n)
+
 #pseudo R squared calculation (fit between model predicted data and actual data)
 data$mgCpergSoilM.pred=as.vector(fitted(m3))
 R2=lm(mgCpergSoilM~mgCpergSoilM.pred, data=data, na.action=na.omit)
@@ -464,4 +467,75 @@ emtrends(m3,pairwise~ppt.cm*soil_texture_clay,var="tmeanC", at=mylist)
          theme_minimal()  # Apply a minimal theme for a clean look
        
        
+       # Create a violin plot with individual data points and mean line for soil texture class
+       ggplot(data, aes(x = soil_texture_class, y = mgCpergSoilM, color = soil_texture_class, fill = soil_texture_class)) +
+         geom_violin(trim = FALSE, alpha = 0.5) +  # Create the violin plot with semi-transparent fill
+         geom_jitter(width = 0.2, size = 1) +  # Add jittered points
+         stat_summary(fun = mean, geom = "point", shape = 23, size = 2, color = "black", fill = "yellow") +  # Add mean points
+         labs(title = "Distribution of mgCpergSoilM by Soil Texture Class",
+              x = "Soil Texture Class",
+              y = "mgC per g Soil MAOM") +
+         theme_minimal() +  # Apply a minimal theme for a clean look
+         theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),  # Adjust text angle, justification, and size
+               plot.margin = margin(5, 5, 10, 5))  # Increase the bottom margin to give more space to labels
+       
+       
+       # Load the necessary library
+       library(dplyr)
+       
+       # Assuming 'data' is a data frame already loaded into your environment
+       # Replace this with your actual data loading method, e.g., read.csv or read_excel
+       # data <- read.csv("your_data_file.csv")
+       
+       # Grouping the data by 'Type.x' and calculating the required statistics
+       summary <- data %>%
+         group_by(Type.x) %>%
+         summarise(
+           n = n(),
+           MgMAOM_max = max(mgCpergSoilM, na.rm = TRUE),
+           MgMAOM_min = min(mgCpergSoilM, na.rm = TRUE),
+           MgMAOM_mean = mean(mgCpergSoilM, na.rm = TRUE),
+           MgMAOM_sd = sd(mgCpergSoilM, na.rm = TRUE),
+           MgPOM_max = max(mgCpergSoilP, na.rm = TRUE),
+           MgPOM_min = min(mgCpergSoilP, na.rm = TRUE),
+           MgPOM_mean = mean(mgCpergSoilP, na.rm = TRUE),
+           MgPOM_sd = sd(mgCpergSoilP, na.rm = TRUE),
+           pMAOM_max = max(propM, na.rm = TRUE),
+           pMAOM_min = min(propM, na.rm = TRUE),
+           pMAOM_mean = mean(propM, na.rm = TRUE),
+           pMAOM_sd = sd(propM, na.rm = TRUE)
+         )
+       
+       # Print the summary table
+       print(summary)
+       
+       library(dplyr)
+       
+       # Grouping the data by 'Type.x' and calculating the required statistics
+       summary <- data %>%
+         group_by(Type.x) %>%
+         summarise(
+           n = n(),
+           MgMAOM_summary = paste0(
+             round(mean(mgCpergSoilM, na.rm = TRUE), 2), " ± ", 
+             round(sd(mgCpergSoilM, na.rm = TRUE), 2), " (", 
+             round(min(mgCpergSoilM, na.rm = TRUE), 2), " - ", 
+             round(max(mgCpergSoilM, na.rm = TRUE), 2), ")"
+           ),
+           MgPOM_summary = paste0(
+             round(mean(mgCpergSoilP, na.rm = TRUE), 2), " ± ", 
+             round(sd(mgCpergSoilP, na.rm = TRUE), 2), " (", 
+             round(min(mgCpergSoilP, na.rm = TRUE), 2), " - ", 
+             round(max(mgCpergSoilP, na.rm = TRUE), 2), ")"
+           ),
+           pMAOM_summary = paste0(
+             round(mean(propM, na.rm = TRUE), 2), " ± ", 
+             round(sd(propM, na.rm = TRUE), 2), " (", 
+             round(min(propM, na.rm = TRUE), 2), " - ", 
+             round(max(propM, na.rm = TRUE), 2), ")"
+           )
+         )
+       
+       # Print the summary table
+       print(summary)
        

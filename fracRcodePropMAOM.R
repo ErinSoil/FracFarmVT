@@ -52,6 +52,26 @@ ggplot(data, aes(x = overall.score, y = logitpropM)) +
   theme_minimal()
 
 
+
+
+
+# total carbon regression
+regression_model <- lm(logitpropM ~ (mgCpergSoilM+mgCpergSoilP), data = data)
+
+# Summarize the regression model
+summary(regression_model)
+
+# Create a plot with the regression line
+ggplot(data, aes(x = (mgCpergSoilM+mgCpergSoilP), y = logitpropM)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Linear Regression of mgCpergSoilM on total carbon",
+       x = "Total Carbon",
+       y = "logit proportion of MAOM") +
+  theme_minimal()
+
+
+
 # Perform linear regression
 regression_model <- lm(overall.score ~ logitpropM, data = data)
 
@@ -263,6 +283,13 @@ m4M <- gls(logitpropM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC +
            data = data, 
            na.action = na.exclude, 
            method = "ML")
+summary(m4M)
+anova(m4M)
+
+#pseudo R squared calculation (fit between model predicted data and actual data)
+data$logitpropM.pred=as.vector(fitted(m4M))
+R3=lm(logitpropM~logitpropM.pred, data=data, na.action=na.omit)
+summary(R3) #r2= .1128
 
 
 #yikes, nothing is significant and the AIC went up significantly
@@ -533,6 +560,17 @@ ggplot(data, aes(x = Type.x, y = logitpropM, color = Type.x, fill = Type.x)) +
        y = "MAOM Proportion (logit)") +
   theme_minimal()  # Apply a minimal theme for a clean look
 
+# Create a violin plot with individual data points and mean line for soil texture class
+ggplot(data, aes(x = soil_texture_class, y = logitpropM, color = soil_texture_class, fill = soil_texture_class)) +
+  geom_violin(trim = FALSE, alpha = 0.5) +  # Create the violin plot with semi-transparent fill
+  geom_jitter(width = 0.2, size = 1) +  # Add jittered points
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 2, color = "black", fill = "yellow") +  # Add mean points
+  labs(title = "Distribution of % MAOM by Soil Texture Class",
+       x = "Soil Texture Class",
+       y = "Proportion of MAOM (logit)") +
+  theme_minimal() +  # Apply a minimal theme for a clean look
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),  # Adjust text angle, justification, and size
+        plot.margin = margin(5, 5, 10, 5))  # Increase the bottom margin to give more space to labels
 
 
 #R squared Code
@@ -640,7 +678,7 @@ print(rsquared_value)
 
 
 #anova by field type to see differences 
-field_anova<- aov(logitpropM~Type.x, data=data)
+field_anova<- aov(propM~Type.x, data=data)
 summary(field_anova)  
 
 TukeyHSD(field_anova)
