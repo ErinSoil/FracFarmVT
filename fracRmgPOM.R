@@ -11,10 +11,180 @@ library(corrplot)
 library(emmeans)
 library(nlme)
 library(ggeffects)
+library (gmodels)
+library(reshape2)
 
 ##call in the analytical data
 data <- read.csv("data.csv")
 View(data)
+
+# test for differences in OM for field types
+
+# Perform ANOVA
+anova_result <- aov(OM30 ~ Type.x, data = data)
+
+# Summary of ANOVA
+summary(anova_result)
+
+# Conduct post-hoc tests using Tukey's HSD test for pairwise comparisons
+posthoc <- emmeans(anova_result, ~ Type.x)
+
+# Print pairwise comparisons
+print(posthoc, type = "compact")
+
+# Use table() function to count occurrences of each field type
+type_counts <- table(data$Type.x)
+
+# Print the counts
+print(type_counts)
+
+
+# Example ANOVA
+anova_model <- aov(soil_texture_clay ~ Type.x, data = data)
+
+# Summary of ANOVA
+summary(anova_model)
+
+# Example linear regression
+lm_model <- lm(soil_texture_clay ~ Type.x, data = data)
+
+# Summary of linear regression
+summary(lm_model)
+
+# Example Tukey's HSD test for post-hoc analysis
+tukey_test <- TukeyHSD(anova_model)
+
+# View Tukey's HSD test results
+print(tukey_test)
+
+# test for differences in soil texture class for field types
+#all CIs overlap indicatin no sigficant difference
+# Perform ANOVA
+anova_result <- aov(soil_texture_clay ~ Type.x, data = data)
+# Summary of ANOVA
+summary(anova_result)
+# Conduct post-hoc tests using Tukey's HSD test for pairwise comparisons
+posthoc <- emmeans(anova_result, ~ Type.x)
+# Print pairwise comparisons
+print(posthoc, type = "compact")
+
+
+# Example scatter plot with jitter
+ggplot(data, aes(x = Type.x, y = soil_texture_clay)) +
+  geom_jitter(width = 0.3, height = 0, alpha = 0.7) +
+  labs(x = "Field Type", y = "Soil Texture Clay") +
+  ggtitle("Relationship between Soil Texture Clay and Field Type") +
+  theme_minimal()
+
+# Example contingency table
+cont_table <- table(data$Type.x, data$soil_texture_class)
+
+# View the contingency table
+cont_table
+# Load necessary library
+library(vcd)  # For mosaic plot
+
+# Example mosaic plot
+mosaicplot(cont_table, main = "Mosaic Plot of Field Type vs. Soil Texture Class")
+
+# Summarize the data by soil_texture_class and Type.x
+summary_data <- data %>%
+  group_by(soil_texture_class, Type.x) %>%
+  summarise(count = n()) %>%
+  mutate(percent = count / sum(count) * 100)  # Calculate percentage within each soil_texture_class
+
+# Plot stacked bar plot
+library(ggplot2)
+ggplot(summary_data, aes(x = soil_texture_class, y = percent, fill = Type.x)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(x = "Soil Texture Class", y = "Percentage", fill = "Field Type") +
+  ggtitle("Distribution of Field Type across Soil Texture Classes") +
+  theme_minimal()
+
+# Plot grouped bar plot
+ggplot(summary_data, aes(x = soil_texture_class, y = percent, fill = Type.x)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Soil Texture Class", y = "Percentage", fill = "Field Type") +
+  ggtitle("Distribution of Field Type across Soil Texture Classes") +
+  theme_minimal()
+
+# Example of performing chi-square test
+cont_table <- table(data$soil_texture_class, data$Type.x)
+chi_square_test <- chisq.test(cont_table)
+
+# View the contingency table
+print(cont_table)
+
+# View the chi-square test results
+print(chi_square_test)
+
+# Perform chi-square test
+cont_table <- table(data$soil_texture_class, data$Type.x)
+chi_square_test <- chisq.test(cont_table)
+
+# Residual analysis
+residuals <- residuals(chi_square_test)
+
+# View residuals
+print(residuals)
+
+# Compute adjusted residuals
+adjusted_res <- chisq.test(cont_table)$residuals
+
+# View adjusted residuals
+print(adjusted_res)
+
+# Example of mosaic plot
+library(vcd)
+mosaicplot(cont_table, main = "Mosaic Plot of Field Type vs. Soil Texture Class")
+
+# Use table() function to count occurrences of each field type
+type_counts <- table(data$Type.x)
+
+# Print the counts
+print(type_counts)
+
+
+# Create a contingency table
+contingency_table <- table(data$Type.x, data$soil_texture_class)
+
+# Print the contingency table
+print(contingency_table)
+
+# Perform chi-square test of independence
+chi2_test <- chisq.test(contingency_table)
+
+# Print the chi-square test results
+print(chi2_test)
+
+# chi test shows that this is a significant association between field trye and soil texture class
+
+# Create a contingency table
+contingency_table <- table(data$Type.x, data$soil_texture_class)
+
+# Convert contingency table to data frame for plotting
+contingency_df <- as.data.frame.matrix(contingency_table)
+
+# Reshape data for plotting (optional, depending on how you want to visualize)
+
+contingency_melted <- melt(contingency_df)
+
+# Plot clustered bar plot
+ggplot(contingency_melted, aes(x = soil_texture_class, y = value, fill = Type.x)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Soil Texture Class", y = "Count") +
+  ggtitle("Distribution of Field Types by Soil Texture") +
+  theme_minimal()
+
+library(gplots)
+# Plot heatmap of contingency table
+heatmap.2(as.matrix(contingency_table),
+          trace = "none",
+          col = heat.colors(length(unique(data$Type.x))),
+          dendrogram = "row",
+          main = "Association between Field Type and Soil Texture",
+          xlab = "Soil Texture Class",
+          ylab = "Field Type")
 
 #soil health regression
 
@@ -500,6 +670,46 @@ ggplot(data, aes(x = soil_texture_class, y = mgCpergSoilP, color = soil_texture_
   labs(title = "Distribution of mgCpergSoilP by Soil Texture Class",
        x = "Soil Texture Class",
        y = "mgC per g Soil POM") +
+  theme_minimal() +  # Apply a minimal theme for a clean look
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),  # Adjust text angle, justification, and size
+        plot.margin = margin(5, 5, 10, 5))  # Increase the bottom margin to give more space to labels
+
+# Load necessary library
+library(ggplot2)  # For plotting
+
+
+# Get unique options in soil_texture_class
+unique_soil_texture <- unique(data$soil_texture_class)
+
+# Print the unique options
+print(unique_soil_texture)
+
+view(data$soil_texture_clay)
+
+# Example data generation (replace with your actual data)
+set.seed(123)
+data <- data.frame(
+  soil_texture_class = sample(c("Sandy", "Loam", "Clayey"), 100, replace = TRUE),
+  Type.x = sample(c("Corn", "field crops", "hay", "pasture", "Veg", "corn"), 100, replace = TRUE),
+  mgCpergSoilP = rnorm(100, mean = 10, sd = 2)
+)
+
+# Create a boxplot or violin plot
+ggplot(data, aes(x = cut(soil_texture_clay, breaks = 5), y = Type.x)) +
+  geom_boxplot() +  # or geom_violin() for a violin plot
+  labs(x = "Soil Texture Clay Levels", y = "Field Type") +
+  ggtitle("Comparison of Field Types across Soil Texture Clay Levels")
+
+
+# Create a violin plot with individual data points and mean line for soil texture and field type
+ggplot(data, aes(x = soil_texture_class, y = mgCpergSoilP, fill = Type.x)) +
+  geom_violin(trim = FALSE, alpha = 0.5) +  # Create the violin plot with semi-transparent fill
+  geom_jitter(width = 0.2, size = 1, position = position_jitterdodge()) +  # Add jittered points, dodge by Type.x
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 2, color = "black", fill = "yellow", position = position_dodge(width = 0.2)) +  # Add mean points, dodge by Type.x
+  labs(title = "Distribution of mgCpergSoilP by Soil Texture and Field Type",
+       x = "Soil Texture Class",
+       y = "mgC per g Soil POM",
+       fill = "Field Type") +
   theme_minimal() +  # Apply a minimal theme for a clean look
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),  # Adjust text angle, justification, and size
         plot.margin = margin(5, 5, 10, 5))  # Increase the bottom margin to give more space to labels
