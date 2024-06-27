@@ -18,6 +18,25 @@ library(reshape2)
 data <- read.csv("data.csv")
 View(data)
 
+summary(data$OM30)
+summary(data$soil_texture_clay)
+summary(data$tmeanC)
+summary(data$ppt.cm)
+summary(data)
+view(data)
+summary(data$Owned)
+summary(data$Acres)
+summary(data$ph)
+sum(data$ph > 7)
+view(data)
+# Count the number of fields with pH greater than 7
+data$ph <- as.numeric(data$ph)
+
+count <- sum(data$ph > 7.00, na.rm = TRUE)
+
+# Print the result
+print(count)
+
 # test for differences in OM for field types
 
 # Perform ANOVA

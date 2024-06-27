@@ -72,6 +72,51 @@ xy <- SpatialPoints(cbind(-81.8125, 24.5625))
   
   data <- read.csv(file="fracData2.csv", header=TRUE, sep=",")
   
+  library(ggplot2)
+ 
+  
+  # Assuming 'Field_Code' is the shared column between vermont_map and data
+  merged_data <- merge(Loc, data, by = "Field_Code", all.x = TRUE)
+  
+  # Convert Type.x to a factor for correct color mapping
+  merged_data$Type.x <- factor(merged_data$Type.x)
+  
+  #make a map by field type
+  ggplot() +
+    geom_polygon(data = vermont_map, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+    geom_point(data = merged_data, aes(x = lon, y = lat, color = Type.x), size = 3) +  # Mapping Type.x to color
+    coord_fixed(1.3) +  # Fix aspect ratio
+    labs(title = "Latitude and Longitude Points on the Map of Vermont",
+         x = "Longitude",
+         y = "Latitude",
+         color = "Farm Type") +  # Legend title
+    scale_color_discrete(name = "Farm Type", labels = levels(merged_data$Type.x)) +  # Custom legend labels
+    theme_minimal()
+  
+  #add soils data to map of plots colored by field type
+  # Assuming 'soil_texture_class' is a column in the 'data' dataframe
+  # Load soil data for Vermont (FIND THIS)
+  soil_data <- read.csv("soil_data.csv")  # Replace with your actual data loading method
+  
+  # Assuming 'Field_Code' is the shared column between Loc and merged_data
+  merged_data <- merge(Loc, data, by = "Field_Code", all.x = TRUE)
+  
+  # Convert Type.x to a factor for correct color mapping
+  merged_data$Type.x <- factor(merged_data$Type.x)
+  
+  ggplot() +
+    geom_polygon(data = Loc, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+    geom_polygon(data = soil_data, aes(x = long, y = lat, group = group, fill = soil_texture_class), color = "gray") +
+    geom_point(data = merged_data, aes(x = lon, y = lat, color = Type.x), size = 3) +  # Mapping Type.x to color
+    coord_fixed(1.3) +  # Fix aspect ratio
+    labs(title = "Latitude and Longitude Points on the Map of Vermont",
+         x = "Longitude",
+         y = "Latitude",
+         color = "Farm Type") +  # Legend title
+    scale_color_discrete(name = "Farm Type", labels = levels(merged_data$Type.x)) +  # Custom legend labels
+    scale_fill_manual(name = "Soil Type", values = c("brown", "yellow", "green", "blue")) +  # Custom soil legend colors
+    theme_minimal()
+  
   # join tables
   data <- data %>%
     left_join(Loc, by = "Field_Code")

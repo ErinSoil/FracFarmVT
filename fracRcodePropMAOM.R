@@ -51,6 +51,40 @@ ggplot(data, aes(x = overall.score, y = logitpropM)) +
        y = "logit proportion of MAOM") +
   theme_minimal()
 
+Color by soil_texture_class
+# Perform linear regression
+regression_model <- lm(logitpropM ~ overall.score, data = data)
+
+# Summarize the regression model
+summary(regression_model)
+
+# Create a plot with the regression line and colored points
+ggplot(data, aes(x = overall.score, y = logitpropM, color = soil_texture_class)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Linear Regression of logitpropM on overall.score",
+       x = "Overall Score",
+       y = "Logit Proportion of MAOM") +
+  theme_minimal()
+
+
+library(ggplot2)
+library(dplyr)
+
+# Create a new column for color based on soil_texture_class
+data <- data %>%
+  mutate(color = ifelse(grepl("Clay", soil_texture_class), "red", "black"))
+
+# Create a plot with the regression line and colored points
+ggplot(data, aes(x = overall.score, y = logitpropM, color = color)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Linear Regression of logitpropM on overall.score",
+       x = "Overall Score",
+       y = "Logit Proportion of MAOM") +
+  theme_minimal() +
+  scale_color_identity()
+
 
 
 
