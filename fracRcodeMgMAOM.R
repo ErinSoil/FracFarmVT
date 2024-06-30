@@ -15,6 +15,7 @@ library(emmeans)
 ##call in the analytical data
 data <- read.csv("data.csv")
 view(data)
+summary(data$ph)
 
 #soil health regression
 
@@ -32,6 +33,42 @@ ggplot(data, aes(x = overall.score, y = mgCpergSoilM)) +
        x = "Overall Score",
        y = "mgC per g Soil M") +
   theme_minimal()
+
+
+
+#pH regression
+
+# Perform linear regression
+regression_model6 <- lm(logitpropM ~ ph, data = data)
+
+# Summarize the regression model
+summary(regression_model6)
+
+# Create a plot with the regression line
+ggplot(data, aes(x = ph, y = logitpropM)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Linear Regression of logitpropMAOM on pH",
+       x = "pH",
+       y = "logitpropM") +
+  theme_minimal()
+
+
+# Basic histogram
+hist(data$ph, main="Histogram of pH", xlab="pH", ylab="Frequency", col="blue", border="black")
+
+
+
+# Load the dplyr package
+library(dplyr)
+
+# Filter for pasture and count organic matter additions
+result <- data %>%
+  filter(Type.x == "Corn") %>%
+  count(Organic.matter.additions)
+
+# View the result
+print(result)
 
 
 
