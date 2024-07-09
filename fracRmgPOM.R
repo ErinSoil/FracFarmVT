@@ -13,6 +13,9 @@ library(nlme)
 library(ggeffects)
 library (gmodels)
 library(reshape2)
+library(car) # for Levene's Test
+library(ggpubr) # for easy plotting
+library(multcomp) # for Tukey's HSD test
 
 ##call in the analytical data
 data <- read.csv("data.csv")
@@ -37,16 +40,18 @@ count <- sum(data$ph > 7.00, na.rm = TRUE)
 # Print the result
 print(count)
 
+anova_result2 <- aov(ph ~ Type.x, data=data)
+
 # test for differences in OM for field types
 
 # Perform ANOVA
 anova_result <- aov(OM30 ~ Type.x, data = data)
 
 # Summary of ANOVA
-summary(anova_result)
+summary(anova_result2)
 
 # Conduct post-hoc tests using Tukey's HSD test for pairwise comparisons
-posthoc <- emmeans(anova_result, ~ Type.x)
+posthoc <- emmeans(anova_result2, ~ Type.x)
 
 # Print pairwise comparisons
 print(posthoc, type = "compact")
@@ -57,6 +62,11 @@ type_counts <- table(data$Type.x)
 # Print the counts
 print(type_counts)
 
+# Use table() function to count occurrences of each field type
+type_counts <- table(data$soil_texture_class)
+
+# Print the counts
+print(type_counts)
 
 # Example ANOVA
 anova_model <- aov(soil_texture_clay ~ Type.x, data = data)
@@ -208,19 +218,46 @@ heatmap.2(as.matrix(contingency_table),
 #soil health regression
 
 # Perform linear regression
-regression_model <- lm(mgCpergSoilP ~ overall.score, data = data)
+regression_model <- lm(mgCpergSoilM ~ overall.score, data = data)
+
+# Summarize the regression model
+summary(regression_model)
+
+#soil health regression the other way
+
+# Perform linear regression
+regression_model <- lm(overall.score ~ mgCpergSoilP, data = data)
 
 # Summarize the regression model
 summary(regression_model)
 
 # Create a plot with the regression line
-ggplot(data, aes(x = overall.score, y = mgCpergSoilP)) +
+ggplot(data, aes(x = mgCpergSoilP, y = overall.score)) +
   geom_point() +
   geom_smooth(method = "lm", col = "blue") +
-  labs(title = "Linear Regression of mgCpergSoilP on overall.score",
-       x = "Overall Score",
-       y = "mgC per g Soil P") +
+  labs(title = "Linear Regression of overall.score on mgCpergSoilP",
+       x = "mgC per g Soil P",
+       y = "Overall Score") +
   theme_minimal()
+
+#soil health regression the other way
+
+# Perform linear regression
+regression_model <- lm(overall.score ~ logitpropM, data = data)
+
+# Summarize the regression model
+summary(regression_model)
+
+# Create a plot with the regression line
+ggplot(data, aes(x = logitpropM, y = overall.score)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Linear Regression of overall.score on logitpropM",
+       x = "logitpropM",
+       y = "Overall Score") +
+  theme_minimal()
+
+
 
 #Correlation plot
 cordata <- cor(data[,c("mgCpergSoilP","overall.score","mgCpergSoilM","logitpropM")], use="pairwise.complete.obs", method="pearson")
@@ -579,7 +616,7 @@ data <- data %>%
              lwd = 1) +
    own_theme+
    #theme(legend.position = "none") +
-   scale_y_continuous(expression("mg C in POM per g soil")) +
+   scale_y_continuous(expression("mg POC g"^-1,"soil")) +
    scale_x_continuous(expression("Mean Annual Temperature(C)"),
                       label = scales::comma) +
    scale_color_manual(values = c("blue", "red")) # adjust colors if needed
@@ -745,3 +782,360 @@ texture_anova<- aov(mgCpergSoilP~soil_texture_class, data=data)
 summary(texture_anova)  
 
 TukeyHSD(texture_anova)
+
+# Create the stacked bar plot
+ggplot(data, aes(x = Type.x, fill = factor(Tillage_1to4))) +
+  geom_bar(position = "stack") +
+  labs(title = "Distribution of Tillage Categories by Field Type",
+       x = "Field Type",
+       y = "Count",
+       fill = "Tillage Category") +
+  theme_minimal()
+
+# Create the stacked bar plot
+ggplot(data, aes(x = Type.x, fill = factor(till.passes))) +
+  geom_bar(position = "stack") +
+  labs(title = "Distribution of Tillage Passes by Field Type",
+       x = "Field Type",
+       y = "Count",
+       fill = "Tillage Category") +
+  theme_minimal()
+
+
+# Perform linear regression
+regression_model <- lm(mgCpergSoilP ~ mgCpergSoilM, data = data)
+
+# Summarize the regression model
+summary(regression_model)
+
+# Create a plot with the regression line
+ggplot2(data, aes(x = mgCpergSoilM, y = mgCpergSoilP) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Linear Regression of mgPOC on mgMAOC",
+       x = "POM",
+       y = "MAOM") +
+  theme_minimal()
+  
+
+  
+  # Subset the data frame to get only the rows where Type.x is 'Field_crops'
+  field_crops_samples <- subset(data, Type.x == "Field crops")
+  
+  # Extract the Field_code for those samples
+  field_crops_codes <- field_crops_samples$Field_Code
+  
+  # Print the result
+  print(field_crops_codes)
+  
+  library(ggplot2)
+  library(dplyr)
+  library(car) # for Levene's Test
+  library(ggpubr) # for easy plotting
+  
+  # Check the distribution of pH for each Type.x using boxplots
+  ggboxplot(data, x = "Type.x", y = "ph", 
+            color = "Type.x", palette = "jco",
+            ylab = "pH", xlab = "Field Type")
+  
+  # Check the normality assumption
+  shapiro_test <- data %>%
+    group_by(Type.x) %>%
+    summarise(shapiro_p = shapiro.test(ph)$p.value)
+  
+  print(shapiro_test)
+  
+  # Check the homogeneity of variances assumption
+  levene_test <- leveneTest(ph ~ Type.x, data = data)
+  
+  print(levene_test)
+  
+  # If p-value of Shapiro-Wilk test and Levene's test are greater than 0.05, proceed with ANOVA
+  if (all(shapiro_test$shapiro_p > 0.05) && levene_test$p.value > 0.05) {
+    # Perform ANOVA
+    anova_result <- aov(ph ~ Type.x, data = data)
+    summary(anova_result)
+    
+    # Post-hoc test if ANOVA is significant
+    if (summary(anova_result)[[1]]$`Pr(>F)`[1] < 0.05) {
+      tukey_result <- TukeyHSD(anova_result)
+      print(tukey_result)
+    }
+  } else {
+    # If assumptions are not met, perform the Kruskal-Wallis test
+    kruskal_result <- kruskal.test(ph ~ Type.x, data = data)
+    print(kruskal_result)
+  }
+  
+  
+  # Post-hoc test if ANOVA is significant
+  if (summary(anova_result)[[1]]$`Pr(>F)`[1] < 0.05) {
+    tukey_result <- TukeyHSD(anova_result)
+    print(tukey_result)
+    
+    # Plot the Tukey HSD results
+    plot(tukey_result)
+  }
+  } else {
+    # If assumptions are not met, perform the Kruskal-Wallis test
+    kruskal_result <- kruskal.test(ph ~ Type.x, data = data)
+    print(kruskal_result)
+    
+    # If Kruskal-Wallis test is significant, perform post-hoc Dunn test
+    if (kruskal_result$p.value < 0.05) {
+      library(FSA) # For Dunn test
+      dunn_result <- dunnTest(pH ~ Type.x, data = data, method = "bh")
+      print(dunn_result)
+    }
+  }
+
+
+
+
+# test for differences in pH for field types
+#all CIs overlap indicatin no sigficant difference
+# Perform ANOVA
+anova_result <- aov(ph ~ Type.x, data = data)
+# Summary of ANOVA
+summary(anova_result)
+# Conduct post-hoc tests using Tukey's HSD test for pairwise comparisons
+posthoc <- emmeans(anova_result, ~ Type.x)
+# Print pairwise comparisons
+print(posthoc, type = "compact")
+
+# Example scatter plot with jitter
+ggplot(data, aes(x = Type.x, y = ph)) +
+  geom_jitter(width = 0.3, height = 0, alpha = 0.7) +
+  labs(x = "Field Type", y = "pH") +
+  ggtitle("Relationship between pH and Field Type") +
+  theme_minimal()
+
+# look at the normality of each variable within each group
+shapiro_test_results <- data %>%
+  group_by(Type.x) %>%
+  summarise(
+    K = shapiro.test(k)$p.value,
+    Mn = shapiro.test(mn)$p.value,
+    Fe = shapiro.test(fe)$p.value,
+    Mg = shapiro.test(mg)$p.value,
+    Zn = shapiro.test(zn)$p.value
+  )
+print(shapiro_test_results)
+
+# Perform MANOVA
+manova_result <- manova(cbind(k, mn, fe, mg, zn) ~ Type.x, data = data)
+summary(manova_result)
+
+# If MANOVA is significant, perform post-hoc tests
+summary.aov(manova_result)
+
+# Perform separate ANOVAs with Bonferroni correction
+anova_results <- list(
+  K = aov(k ~ Type.x, data = data),
+  Mn = aov(mn ~ Type.x, data = data),
+  Fe = aov(fe ~ Type.x, data = data),
+  Mg = aov(mg ~ Type.x, data = data),
+  Zn = aov(zn ~ Type.x, data = data)
+)
+
+# Print ANOVA summaries
+lapply(anova_results, summary)
+
+# Apply Bonferroni correction (or other corrections) to p-values
+p_values <- sapply(anova_results, function(x) summary(x)[[1]]$`Pr(>F)`[1])
+p_values_adjusted <- p.adjust(p_values, method = "bonferroni")
+
+print(data.frame(Variable = names(p_values), P_value = p_values, Adjusted_P_value = p_values_adjusted))
+}
+
+# Perform ANOVAs for each cation
+anova_results <- list(
+  K = aov(k ~ Type.x, data = data),
+  Mn = aov(mn ~ Type.x, data = data),
+  Fe = aov(fe ~ Type.x, data = data),
+  Mg = aov(mg ~ Type.x, data = data),
+  Zn = aov(zn ~ Type.x, data = data)
+)
+
+# Print ANOVA summaries
+anova_summaries <- lapply(anova_results, summary)
+print(anova_summaries)
+
+# Perform Tukey's HSD test if ANOVA is significant
+tukey_results <- lapply(anova_results, function(x) {
+  if (summary(x)[[1]]$`Pr(>F)`[1] < 0.05) {
+    TukeyHSD(x)
+  } else {
+    NULL
+  }
+})
+
+# Print Tukey's HSD results
+print(tukey_results)
+
+# Optionally plot Tukey's HSD results
+par(mfrow = c(3, 2))
+for (i in 1:length(tukey_results)) {
+  if (!is.null(tukey_results[[i]])) {
+    plot(tukey_results[[i]], main = names(tukey_results)[i])
+  }
+}
+
+#regression of MAOM and tillage
+
+regression_model <- lm(mgCpergSoilP ~ Tillage_1to4, data = data)
+
+#Summarize the regression model
+summary(regression_model)
+
+# Example scatter plot with jitter
+library(ggplot2)
+
+ggplot(data, aes(x = as.factor(Tillage_1to4), y = mgCpergSoilM)) +
+  geom_boxplot(outlier.shape = NA, fill = "lightblue", alpha = 0.5) +
+  geom_jitter(width = 0.3, height = 0, alpha = 0.7) +
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +
+  labs(x = "Tillage", y = "MAOM") +
+  ggtitle("Relationship between Tillage and MAOM") +
+  theme_minimal()
+
+# Load necessary library
+library(dplyr)
+
+#Ensure Tillage_1to4 is a factor
+data <- data %>%
+  mutate(Tillage_1to4 = as.factor(Tillage_1to4))
+
+#Perform ANOVA
+anova_result <- aov(mgCpergSoilP ~ Tillage_1to4, data = data)
+summary(anova_result)
+
+#Perform Tukey's HSD test if ANOVA is significant
+tukey_result <- TukeyHSD(anova_result)
+print(tukey_result)
+
+# Optionally, plot the Tukey HSD results
+plot(tukey_result)
+
+
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+library(multcomp)
+
+# Create a new variable that combines Tillage_1to4 = 2, 3, and 4 into a single group
+data <- data %>%
+  mutate(Tillage_Grouped = ifelse(Tillage_1to4 == 1, "1", "2, 3, 4"))
+
+# Ensure the new variable is a factor
+data$Tillage_Grouped <- as.factor(data$Tillage_Grouped)
+
+# Perform ANOVA
+anova_result <- aov(mgCpergSoilM ~ Tillage_Grouped, data = data)
+summary(anova_result)
+
+# If ANOVA is significant, perform Tukey's HSD test
+if (summary(anova_result)[[1]]$`Pr(>F)`[1] < 0.05) {
+  tukey_result <- TukeyHSD(anova_result)
+  print(tukey_result)
+  plot(tukey_result)
+} else {
+  print("No significant difference between tillage groups.")
+}
+
+# Create box plot with means
+ggplot(data, aes(x = Tillage_Grouped, y = mgCpergSoilM)) +
+  geom_boxplot(outlier.shape = NA, fill = "lightblue", alpha = 0.5) +
+  geom_jitter(width = 0.3, height = 0, alpha = 0.7) +
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +
+  labs(x = "Tillage Grouped", y = "MAOM") +
+  ggtitle("Relationship between Tillage and MAOM") +
+  theme_minimal()
+
+#Aggregrate stabiity by field type
+
+#Perform ANOVA
+anova_result <- aov(aggregate_stability ~ Type.x, data = data)
+summary(anova_result)
+
+#Perform Tukey's HSD test if ANOVA is significant
+tukey_result <- TukeyHSD(anova_result)
+print(tukey_result)
+
+# Optionally, plot the Tukey HSD results
+plot(tukey_result)
+
+# Create box plot with means
+ggplot(data, aes(x = Type.x, y = aggregate_stability)) +
+  geom_boxplot(outlier.shape = NA, fill = "lightblue", alpha = 0.5) +
+  geom_jitter(width = 0.3, height = 0, alpha = 0.7) +
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +
+  labs(x = "Field Type", y = "Aggregate Stability") +
+  ggtitle("Relationship between Field Type and Aggregate Stability") +
+  theme_minimal()
+
+#Active Carbon by field type
+
+#Perform ANOVA
+anova_result <- aov(active_carbon ~ Type.x, data = data)
+summary(anova_result)
+
+#Perform Tukey's HSD test if ANOVA is significant
+tukey_result <- TukeyHSD(anova_result)
+print(tukey_result)
+
+# Optionally, plot the Tukey HSD results
+plot(tukey_result)
+
+# Create box plot with means
+ggplot(data, aes(x = Type.x, y = active_carbon)) +
+  geom_boxplot(outlier.shape = NA, fill = "lightblue", alpha = 0.5) +
+  geom_jitter(width = 0.3, height = 0, alpha = 0.7) +
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +
+  labs(x = "Field Type", y = "Active Carbon") +
+  ggtitle("Relationship between Field Type and Active Carbon") +
+  theme_minimal()
+
+
+#POM and MAOM
+# Perform linear regression
+regression_model <- lm(mgCpergSoilM ~ mgCpergSoilP, data = data)
+
+# Summarize the regression model
+summary(regression_model)
+
+# Create a plot with the regression line
+ggplot(data, aes(x = mgCpergSoilP, y = mgCpergSoilM)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Linear Regression of MAOM on POM",
+       x = "POM",
+       y = "MAOM") +
+  theme_minimal()
+
+#compost
+# Count occurrences of "compost" in the column
+count_compost <- sum(grepl("compost", data$Soil.amendments, ignore.case = TRUE))
+
+# Output the count
+count_compost
+
+#tillage and active carbon
+
+
+regression_model <- lm(active_carbon ~ Tillage_1to4, data = data)
+
+#Summarize the regression model
+summary(regression_model)
+
+# Example scatter plot with jitter
+library(ggplot2)
+
+ggplot(data, aes(x = as.factor(Tillage_1to4), y = active_carbon)) +
+  geom_boxplot(outlier.shape = NA, fill = "lightblue", alpha = 0.5) +
+  geom_jitter(width = 0.3, height = 0, alpha = 0.7) +
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +
+  labs(x = "Tillage", y = "PoxC") +
+  ggtitle("Relationship between Tillage and PoxC") +
+  theme_minimal()
+
