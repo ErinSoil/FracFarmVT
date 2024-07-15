@@ -633,8 +633,8 @@ mgPOM_aggregate_stability <-data %>%
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in POM per g soil"))+
-  scale_x_continuous(expression("aggregate stability"),
+  scale_y_continuous(expression("mg POC g"^-1,"soil"))+
+  scale_x_continuous(expression("Aggregate Stability"),
                      label = scales::comma) 
 
 mgPOM_aggregate_stability
@@ -650,8 +650,8 @@ mgPOM_active_carbon <-data %>%
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in POM per g soil"))+
-  scale_x_continuous(expression("active carbon"),
+  scale_y_continuous(expression("mg POC g"^-1,"soil"))+
+  scale_x_continuous(expression("Active Carbon"),
                      label = scales::comma) 
 
 mgPOM_active_carbon

@@ -375,7 +375,7 @@ mgMAOM_aggregate_stability <-data %>%
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_y_continuous(expression("mg C in MAOM per g soil"))+
+  scale_y_continuous(expression("mg MAOC g"^-1,"soil"))+
   scale_x_continuous(expression("Aggregate Stability"),
               label = scales::comma) 
 mgMAOM_aggregate_stability
@@ -392,8 +392,8 @@ mgMAOM_active_carbon <-data %>%
                                lwd = 1) +
           own_theme+
         theme(legend.position = "none") +
-                     scale_y_continuous(expression("mg C in MAOM per g soil"))+
-                     scale_x_continuous(expression("active carbon"),
+                     scale_y_continuous(expression("mg MAOC g"^-1,"soil"))+
+                     scale_x_continuous(expression("Active Carbon"),
                                         label = scales::comma) 
                    mgMAOM_active_carbon
 ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
