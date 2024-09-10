@@ -376,36 +376,11 @@ mgMAOM_aggregate_stability <-data %>%
   own_theme+
   theme(legend.position = "none") +
   scale_y_continuous(expression("mg MAOC g"^-1,"soil"))+
-  scale_x_continuous(expression("Aggregate Stability (%)"),
+  scale_x_continuous(expression("Aggregate Stability"),
               label = scales::comma) 
 mgMAOM_aggregate_stability
 ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)
-  
-# Define the coefficient for aggregate stability
-coef_aggregate_stability <-  0.10780  # in mg find in model summary
-# Define the mean value of MAOC 
-# Print the mean MAOC value
-mean_maoc <- mean(data$mgCpergSoilM, na.rm = TRUE)
-print(paste("The mean MAOC is", round(mean_maoc, 2), "mg"))
-
-mean_MAOC <- 16.77  # Replace with the actual mean value from data
-percentage_increase <- 10  #set a percentage increase of agg stability based on data
-
-# Calculate the absolute increase in MAOC for the given percentage increase in aggregate stability
-absolute_increase_maoc <- coef_aggregate_stability * percentage_increase
-# Calculate the percent increase in POC for a 1% increase in aggregate stability
-Onepercent_increase_maoc <- (coef_aggregate_stability / mean_MAOC) * 100
-# Calculate the percent increase in POC based on the mean value
-percent_increase_maoc <- (absolute_increase_maoc / mean_MAOC) * 100
-
-# Print the result
-print(paste("Absolute increase in MAOC for a 10% increase in aggregate stability is", round(absolute_increase_maoc, 2), "mg"))
-# Print the result
-print(paste("Percent increase in MAOC for a 1% increase in aggregate stability is", round(Onepercent_increase_maoc, 2), "%"))
-# Print the result
-print(paste("Percent increase in MAOC for a", percentage_increase, "% increase in aggregate stability is", round(percent_increase_maoc, 2), "%"))
-
-
+                   
 #for active_carbon
 pred_active_carbon <- ggpredict(m3, terms = c("active_carbon"))
 
@@ -418,42 +393,11 @@ mgMAOM_active_carbon <-data %>%
           own_theme+
         theme(legend.position = "none") +
                      scale_y_continuous(expression("mg MAOC g"^-1,"soil"))+
-                     scale_x_continuous(expression("Active Carbon (ppm)"),
+                     scale_x_continuous(expression("Active Carbon"),
                                         label = scales::comma) 
                    mgMAOM_active_carbon
 ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
- 
-#get them side by side for presentation
-
-ggarrange(mgMAOM_aggregate_stability,mgMAOM_active_carbon,nrow=1, common.legend=T, legend="left", labels=c("a","b"))
-
-
-# Assuming 'data' is your data frame and 'mgCpergSoilM' is the column name for POC
-mean_maoc <- mean(data$mgCpergSoilM, na.rm = TRUE)
-
-print(paste("The mean POC is", round(mean_maoc, 2), "mg"))
-
-# Define the coefficient for active carbon
-coef_activecarbon <-   0.01955  # in ppm
-# Define the mean value of MAOC 
-mean_MAOC <- 16.77  # Replace with the actual mean value from your data
-# Define the ppm increase in active carbon
-ppm_increase <- 100  # For a 100 ppm increase in active carbon
-# Calculate the absolute increase in MAOC for the given ppm increase in active carbon
-absolute_increase_maoc <- coef_activecarbon * ppm_increase
-# Calculate the percent increase in MAOC based on the mean value
-percent_increase_maoc <- (absolute_increase_maoc / mean_MAOC) * 100
-
-# Print the result
-print(paste("Percent increase in MAOC for a", ppm_increase, "ppm in active carbon is", round(percent_increase_maoc, 2), "%"))
-# Print the result
-print(paste("Absolute increase in MAOC for a 100ppm increase in active carbon is", round(absolute_increase_maoc, 2), "mg"))
-# Print the result
-print(paste("Percent increase in MAOC for a 1% increase in actice carbon is", round(Onepercent_increase_maoc, 2), "%"))
-
-
-
-                  
+                   
 #for 3 way interaction of tmean, ppt, and texture
 
 summary(data$soil_texture_clay)

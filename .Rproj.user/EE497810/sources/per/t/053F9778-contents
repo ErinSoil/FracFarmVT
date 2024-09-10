@@ -1,0 +1,159 @@
+#set working directory
+setwd("/Users/f003833/Documents/GitHub/deepSoils") #caitlin
+setwd("C:/Users/F004SPC/Documents/GitHub/deepSoils/deepSoils") #erin
+
+#load your libraries
+library(tidyverse)
+library(dplyr)
+library(ggpubr)
+
+##call in the analytical data
+deepData  <- read.csv(file="data/deepData.csv", header=TRUE, sep=",")   %>%
+
+  #add a column for newly calculated dry weight that subtracts out rock mass then applies the percent mositure correction
+  
+  filter(tool=='ham') %>%
+  mutate(wholeDryWeightRocksthenMoisture= (actualTotalWeightWet-rockMinusBag)*(actualWeightSubDry/actualWeightSubWet)) %>%
+  
+  #recalculate BD by subtracting rocks from dry weight before adjusting for moisture (BDnew)
+  filter(tool=='ham')%>%
+  mutate(BDnew= (wholeDryWeightRocksthenMoisture/actualVolume)) %>%
+ 
+#ESM method to determine stocks in kg c per m3 and #BD method to determine stocks in kgCper m2
+#don't use this one once we get BD new set up. 
+#mutate(ESM= perC/100*(wholeDryWeightRocksthenMoisture/(pi*(2.3876^2)))*10,
+  #     BDCstock= (perC/100)*BD*length*10) %>%
+#pivot_longer( cols=c("ESM", "BDCstock"), names_to="calculationMethod", values_to = "C stock (kg/m^2)")
+
+#ESM method to determine stocks in kg c per m3 and #BDnew method to determine stocks in kgCper m2
+
+mutate(ESM= perC/100*(wholeDryWeightRocksthenMoisture/(pi*(2.3876^2)))*10,
+       BDCstocknew= (perC/100)*BDnew*length*10) %>%
+  pivot_longer( cols=c("ESM", "BDCstocknew"), names_to="calculationMethod", values_to = "cStock")
+
+#cStock is in kg/m^2)C stock (kg/m^2
+
+# plot 
+ESMvsBD=ggplot(deepData, aes(x=calculationMethod, y=`cStock`)) +
+  geom_point()+
+ stat_summary(fun= mean, fun.min=mean, fun.max=mean, geom="crossbar", width=0.8, position="dodge")+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width=0.3, position = position_dodge(width = 0.8))
+
+ESMvsBD
+
+#another plot
+ESMvsBD=ggplot(deepData, aes(x=calculationMethod, y=`cStock`)) +
+   stat_summary(fun= mean, fun.min=mean, fun.max=mean, geom="crossbar", width=0.8, position="dodge")+
+  stat_summary(fun.data = mean_se, geom = "errorbar", width=0.3, position = position_dodge(width = 0.8))
+
+ESMvsBD
+
+#normality test
+ESMdata= deepData%>%filter(calculationMethod=="ESM")%>%select(cStock)
+ESMdata=ESMdata$cStock
+shapiro.test(ESMdata)
+hist(ESMdata)
+hist(log(ESMdata))
+
+BDdata= deepData%>%filter(calculationMethod=="BDCstocknew")%>%select(cStock)
+BDdata=BDdata$cStock
+shapiro.test(BDdata)
+hist(BDdata)
+hist(log(BDdata))
+
+#p value is teeny, less than .05 and therefore is significantly different than normal. Tranformed data with natural log to see normal. 
+
+
+#are differences normally distrubuted? 
+deepDataWide  <- read.csv(file="data/deepData.csv", header=TRUE, sep=",")   %>%
+  filter(tool=='ham') %>%
+  mutate(wholeDryWeightRocksthenMoisture= (actualTotalWeightWet-rockMinusBag)*(actualWeightSubDry/actualWeightSubWet)) %>%
+    #recalculate BD by subtracting rocks from dry weight before adjusting for moisture (BDnew)
+  filter(tool=='ham')%>%
+  mutate(BDnew= (wholeDryWeightRocksthenMoisture/actualVolume)) %>%
+  filter(BDnew<3)%>%
+     mutate(ESM= perC/100*(wholeDryWeightRocksthenMoisture/(pi*(2.3876^2)))*10,
+         BDCstocknew= (perC/100)*BDnew*length*10) %>%
+  mutate(cStockdiff=BDCstocknew-ESM)
+differences=deepDataWide$cStockdiff
+shapiro.test(differences)
+hist(differences)
+hist(log(differences))
+
+
+#Summarize the data
+group_by(deepData, calculationMethod) %>%
+  summarise(
+    count = n(),
+    mean = mean(cStock, na.rm = TRUE),
+    sd = sd(cStock, na.rm = TRUE)
+  )
+
+#another way to do the test?# Shapiro-Wilk normality test for the differences #this didn't work group not found
+d <- with(deepData, 
+          calculationMethod[group == "ESM"] - weight[group == "BDCStocknew"])
+shapiro.test(d) # => p-value = 
+
+#compare two means using a paired t test #how do I get x and y when the data are all in one column?
+
+t.test(ESM, BDCstocknew, paired = TRUE, alternative = "two.sided")
+
+#plot paired data
+
+# Subset ESM
+ESM <- subset(deepData,  calculationMethod == "ESM",
+                 drop = TRUE)
+
+
+# subset BD
+BD <- subset(deepData,  calculationMethod == "BDCstocknew",
+                 drop = TRUE)
+# Plot paired data
+
+t.test(ESM, BDCstocknew, paired = TRUE, alternative = "two.sided")
+
+#another way? didn't work
+pd <- paired(ESM, BD)
+plot(pd, type = "profile") + theme_
+
+#try this way  THIS ONE WORKS!!!   
+res <- t.test(cStock ~ calculationMethod, data = deepData, paired = TRUE)
+res
+
+#t test on differences one sample t test compared to zero
+res1 <- t.test(differences, data = deepDataWide)
+res1
+
+#t test with wide data
+BDCstocknew=deepDataWide$BDCstocknew
+ESM=deepDataWide$ESM
+res2 <- t.test(BDCstocknew,ESM, data = deepDataWide, paired = TRUE, alternative="two.sided")
+res2
+#  the mean is the same. the difference is significant. 
+
+#Pvalue is smaller than .05 so we reject the null that means there is a difference between methods. BD is larger, CI is positive. 
+#ESM is underestimating stock by .08
+
+
+
+#P value is smaller than .05 so we reject the null hypothesis that the means are equal and we conclude that ESM is significantly different from BD calculation methods.
+# is it worth testing by core/hole? to see if depth matters for difference between calculation methods?
+#is it worth cleaning the data by removing outliers for BD data?
+#what else can we do with the ESM vs BD? Shall we spline both methods? 
+
+#compare data by depth deeper than 30
+LDdata = deepDataWide %>%
+  filter(LD>30)
+LDdataESM=LDdata$ESM
+LDdataBD=LDdata$BDCstocknew
+res4 <- t.test(LDdataBD,LDdataESM, paired = TRUE, alternative="two.sided")
+res4
+
+#topsoil
+LDdata = deepDataWide %>%
+  filter(LD<30)
+LDdataESM=LDdata$ESM
+LDdataBD=LDdata$BDCstocknew
+res4 <- t.test(LDdataBD,LDdataESM, paired = TRUE, alternative="two.sided")
+res4
+#top soil has more difference in ESM and BD

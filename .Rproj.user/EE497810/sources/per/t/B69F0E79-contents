@@ -1,0 +1,258 @@
+#calculate stocks on splines and graph splines for each farm
+
+#set working directory
+setwd("/Users/f003833/Documents/GitHub/deepSoils") #caitlin
+setwd("C:/Users/F004SPC/Documents/GitHub/deepSoils/deepSoils") #erin
+
+library(tidyverse)
+library(mpspline2)
+
+##call in the analytical data
+DataSplineAll <-read.csv(file="data/DataSplineAll.csv", header=TRUE, sep=",")
+
+str(DataSplineAll)
+view (DataSplineAll)
+
+#calculate carbon and nitrogen stocks in kg C (or N) per m2
+stockSplines <-DataSplineAll %>%
+  mutate(cStock=(perC/100*BD*(LD-UD)*100^2)/1000,
+         nStock=(perN/100*BD*(LD-UD)*100^2)/1000)
+  view(stockSplines)
+
+
+#calculate total stocks in kg C per m2 per 100 cm
+totalCNstock <- stockSplines %>%
+  group_by(core, site) %>%
+  summarize (totalCstock = sum (cStock), totalNstock = sum (nStock))
+View(totalCNstock)
+
+#calculate subsoil stocks in kg C per m2 per 70 cm
+subsoilCNstock <- stockSplines %>%
+  filter(LD>=60) %>% 
+  group_by(core, site) %>%
+  summarize (subCstock = sum (cStock), subNstock = sum (nStock))
+view(subsoilCNstock)
+
+#calculate topsoil stocks in kg C per m2 per 30 cm
+topsoilCNstock <- stockSplines %>%
+  filter(LD<=30) %>% 
+  group_by(core, site) %>%
+  summarize (topCstock = sum (cStock), topNstock = sum (nStock))
+View (topsoilCNstock)
+
+#merge
+stockSplines <- topsoilCNstock %>% 
+  left_join(., subsoilCNstock) %>% 
+  mutate(totalCstock = topCstock + subCstock,
+         totalNstock = topNstock + subNstock,
+         perCSub = subCstock / totalCstock * 100,
+         site=as.factor(site))
+View (stockSplines)
+
+SiteSummary <- stockSplines %>%
+  group_by(site) %>%
+  summarise(totalCstock=mean_se(totalCstock),
+            subCstock=mean_se(subCstock),
+            topCstock=mean_se(topCstock),
+            perCSub=mean_se(perCSub)) 
+
+
+#graph all sites by C Stock
+
+library(ggstatsplot)
+
+ggbetweenstats(
+  data = stockSplines,
+  x = site,
+  y = totalCstock
+)
+
+ggplot(SiteSummary) +
+  geom_bar( aes(x=site, y=totalCstock$y), stat="identity", fill="skyblue") +
+  geom_errorbar( aes(x=site, ymin=totalCstock$ymin, ymax=totalCstock$ymax), width=0.2, colour="black", size=.9) +
+  geom_bar( aes(x=site, y=subCstock$y), stat="identity", fill="orange") +
+  geom_errorbar( aes(x=site, ymin=subCstock$ymin, ymax=subCstock$ymax), width=0.2, colour="black", size=.9) +
+  theme_bw () +
+  theme(axis.title.x=element_blank(),
+        text = element_text(size = 16)) +
+  ylab(expression(paste("C Stock (kg C ", m^-2, ")"))) 
+
+
+
+#Look at individual sites/fields
+ggbetweenstats(
+  data = stockSplines,
+  x = site,
+  y = totalCstock
+)
+
+
+stockSplines %>% 
+  filter(site=="BG") %>% 
+
+ggplot(SiteSummary) +
+  geom_bar( aes(x=site, y=totalCstock$y), stat="identity", fill="skyblue") +
+  geom_errorbar( aes(x=core, ymin=totalCstock$ymin, ymax=totalCstock$ymax), width=0.2, colour="black", size=.9) +
+  geom_bar( aes(x=site, y=subCstock$y), stat="identity", fill="orange") +
+  geom_errorbar( aes(x=site, ymin=subCstock$ymin, ymax=subCstock$ymax), width=0.2, colour="black", size=.9) +
+  theme_bw () +
+  theme(axis.title.x=element_blank(),
+        text = element_text(size = 16)) +
+  ylab(expression(paste("C Stock (kg C ", m^-2, ")"))) 
+
+
+
+
+
+
+#correct code for graphing stocks on individual fields
+
+
+view(stockSplines)
+str(stockSplines)
+
+stockSplines <- stockSplines %>% 
+  mutate(core=as.factor(core))
+
+stockSplines %>% 
+  filter(site=="BG") %>% 
+  ggplot() +
+  geom_bar(aes(x=core,y=totalCstock), stat="identity") +
+  geom_bar(aes(x=core,y=subCstock), stat="identity",fill="orange") +
+  theme_bw () +
+  theme(axis.title.x=element_blank(),
+        text = element_text(size = 16)) +
+  ylab(expression(paste("C Stock (kg C ", m^-2, ")"))) 
+
+stockSplines %>% 
+  filter(site=="W") %>% 
+  ggplot() +
+  geom_bar(aes(x=core,y=totalCstock), stat="identity") +
+  geom_bar(aes(x=core,y=subCstock), stat="identity",fill="orange") +
+  theme_bw () +
+  theme(axis.title.x=element_blank(),
+        text = element_text(size = 16)) +
+  ylab(expression(paste("C Stock (kg C ", m^-2, ")"))) 
+
+DataSplineAll %>% 
+  filter(site=="BC") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "BC"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="A") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "A"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="CH") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "CH"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="EH") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "EH"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="LA") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "LA"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="LC") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "LC"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="LG") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "LG"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="LH") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "LH"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="N") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "N"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="PR") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "PR"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="SR") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "SR"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="T") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "T"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="VC") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "VC"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="VG") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "VG"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="VH") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "VH"), 
+             aes(y=perC, x=LD, color=core))
+
+DataSplineAll %>% 
+  filter(site=="W") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "W"), 
+             aes(y=perC, x=LD, color=core))
+
+#Graph Bulk density vs carbon contentDataSplineAll %>% 
+filter(site=="BG") %>% 
+  ggplot() +
+  geom_line(aes(y=perC, x=LD, color=core)) +
+  geom_point(data=subset(dat, site == "BG"), 
+             aes(y=perC, x=LD, color=core))
+ggplot(dat) +
+  geom_point(aes(y=BD, x=perC, color=site))+
+  geom_smooth(aes(y=BD, x=perC, color=site),method="lm")
+

@@ -1,0 +1,416 @@
+
+#set working directory
+setwd("/Users/f003833/Documents/GitHub/deepSoils") #caitlin
+setwd("C:/Users/F004SPC/Documents/GitHub/deepSoils/deepSoils") #erin
+
+#load your libraries
+library(tidyverse)
+library(dplyr)
+
+##call in the analytical data
+SiteData_F <- read.csv(file="data/deepFarm.csv", header=TRUE, sep=",") %>%
+             # filter(tool!="probe") %>%
+              mutate(plot = as.factor(plot),
+                     ID = as.factor(ID)) 
+length(levels(SiteData_F$plot)) #113 with probe, 74 without probe
+length(levels(SiteData_F$ID)) #649 with probe, 559 without probe
+
+SiteData_E <- read.csv(file="data/deepEA.csv", header=TRUE, sep=",") %>%
+                mutate(ID = as.factor(ID)) %>%
+                select(-analysisDate) %>% 
+                dplyr::group_by(ID) %>% #needed to summarize because some data in twice, BB looks wrong
+                summarize(perC = mean(perC),
+                          perN = mean(perN))
+                
+length(levels(SiteData_E$ID)) #642, so 7 samples are missing C N data
+
+SiteData_LL <- read.csv(file="data/deepLatlong.csv", header=TRUE, sep=",") %>%
+                mutate(plot = as.factor(plot))
+length(levels(SiteData_LL$plot)) #71
+
+SiteData_ULD <- read.csv(file="data/deepTopbottom.csv", header=TRUE, sep=",") %>%
+                mutate(ID = as.factor(ID))
+length(levels(SiteData_ULD$ID)) #559
+
+
+#allows you to see the classes of the variables 
+str(SiteData_F)
+
+#merge to a new dataframe called deepData
+deepData <- SiteData_F %>%
+            left_join(SiteData_E, by="ID") %>%
+           # filter(tool!="probe") %>%
+            left_join(SiteData_ULD, by=c("ID", "tool")) %>%
+            left_join(SiteData_LL, by= "plot")
+
+View(deepData)
+
+#data exploration
+
+ggplot(deepData,aes(x=LD, y=BD, color=site)) + geom_point ()
+ggplot(deepData,aes(x=LD, y=perC, color=site)) + geom_point ()
+ggplot(deepData,aes(x=LD, y=perN, color=site)) + geom_point ()
+
+
+write.csv(deepData, "data/deepData.csv", row.names = FALSE)
+
+
+#**************STOP HERE****************
+
+
+
+#calculate carbon and nitrogen stocks in kg C (or N) per m2
+deepData<-deepData %>%
+  mutate(cStock=(perC/100*BD*(LD-UD)*100^2)/1000,
+         nStock=(perN/100*BD*(LD-UD)*100^2)/1000)
+
+
+#calculate total stocks in kg C per m2 per 100 cm
+totalCstock <- deepData %>%
+  group_by(plot, site) %>%
+  summarize (totalCStock = sum (cStock), totalNStock = sum (nStock))
+View(totalCstock)
+
+#calculate subsoil stocks in kg C per m2 per 70 cm
+subsoilCNstock <- deepData %>%
+  filter(UD>30 | LD<100) %>% 
+  group_by(plot, site) %>%
+  summarize (subCStock = sum (cStock), subNStock = sum (nStock))
+view(subsoilCNstock)
+
+#calculate topsoil stocks in kg C per m2 per 30 cm
+topsoilCNstock <- deepData %>%
+  filter(LD<30) %>% 
+  group_by(plot, site) %>%
+  summarize (topCStock = sum (cStock), topNStock = sum (nStock))
+View (topsoilCNstock)
+
+
+#merge
+deepDataStock <- topsoilCNstock %>% 
+  left_join(., subsoilCNstock) %>% 
+  mutate(totalCStock = topCStock + subCStock,
+         totalNStock = topNStock + subNStock,
+         perCSub = subCStock / totalCStock * 100,
+         site=as.factor(site))
+View (deepDataStock)
+
+SiteSummary <- deepDataStock %>%
+  group_by(site) %>%
+  summarise(totalCstock=mean_se(totalCStock),
+            subCstock=mean_se(subCStock),
+            topCstock=mean_se(topCStock),
+            perCSub=mean_se(perCSub)) 
+
+
+#graph all sites by C Stock
+
+library(ggstatsplot)
+
+ggbetweenstats(
+  data = deepDataStock,
+  x = site,
+  y = totalCStock
+  )
+
+ggplot(SiteSummary) +
+  geom_bar( aes(x=site, y=totalCstock$y), stat="identity", fill="skyblue") +
+  geom_errorbar( aes(x=site, ymin=totalCstock$ymin, ymax=totalCstock$ymax), width=0.2, colour="black", size=.9) +
+  geom_bar( aes(x=site, y=subCstock$y), stat="identity", fill="orange") +
+  geom_errorbar( aes(x=site, ymin=subCstock$ymin, ymax=subCstock$ymax), width=0.2, colour="black", size=.9) +
+  theme_bw () +
+  theme(axis.title.x=element_blank(),
+        text = element_text(size = 16)) +
+  ylab(expression(paste("C Stock (kg C ", m^-2, ")"))) 
+  
+
+
+##SAMPLE SIZE TEST
+#summarize
+SiteDataSubSummary<-SiteDataSubsoil %>%
+  group_by(site) %>%
+  summarise(Cstock=mean_se(totalCStock)) %>%
+  mutate(type = "real")
+
+#randomly sample rows from a dataframe
+SiteDataSubTest<-SiteDataSubsoil %>%
+  group_by(site) %>%
+  sample_n(.,5, replace = TRUE) %>%
+  summarise(Cstock=mean_se(totalCStock)) %>%
+  mutate(type = "test")
+
+test <- rbind(SiteDataSubSummary,SiteDataSubTest)
+
+ggplot(data=test) +
+  geom_bar(aes(x=site, y= Cstock$y, fill = type), stat= "identity", position = position_dodge())+
+  geom_errorbar(aes(x=site, ymin=Cstock$ymin, ymax = Cstock$ymax, fill = type), width=.2,
+                position=position_dodge(.9))
+
+
+#test within real?
+#80% with Butterworks, 40% Lucas, 60% Vershire
+
+#steps for splining the data to standardized depth intervals for prediction
+# The devtools package has a function to allow installation of R packages from the Bitbucket code repo
+
+#load your libraries
+library(tidyverse)
+library(mpspline2)
+
+
+##Set the depth increments you want to predict
+depths = c(0, 5, 10, 15, 20, 25, 30, 40, 50 ,60, 70, 80, 90, 100)
+
+depths = c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55 ,60, 65, 70, 75, 80, 85, 90, 95, 100)
+
+depths = c(0, 5, 15, 30, 60, 100)
+
+# look at BD distribution
+hist(deepData$BD)
+
+#only use data from hammer and auger(something seems to have gone wrong here) 
+deepData<-deepData%>%
+  filter(tool!="probe")%>%
+ 
+  #combine farm and plot to get a unique ID for each core (note this is no longer needed)
+#unique ID allows you to run multiple farms at once
+
+  mutate(farm=str_trim(farm, side = "right"), 
+         
+         
+         #columns had some extra spaces in data, so this gets rid of them (this isn't roking and isn't clear I need it)
+         plot=str_trim(plot, side = 'right'),
+         plot=as.factor(str_c(farm, plot)),
+         BD = ifelse(bulkDensity > 2.5, "NA", BD),
+         BD = ifelse(bulkDensity < 0.3, "NA", BD),
+        BD = as.numeric(BD))
+
+
+view(deepData)
+hist(deepData$BD)
+hist(deepData$LD)
+
+
+
+
+
+
+#check that you have the right number of cores represented
+levels(deepData$plot)
+
+#get file into format needed for spline function
+#Column 1 must contain site identifiers. Columns 2 and 3
+#must contain upper and lower sample depths, respectively, and be measured in
+#centimeters. Subsequent columns will contain measured values for those depths.
+
+dat <- data.frame("core" = deepData$plot,
+                  "UD" = deepData$UD,
+                  "LD" = deepData$LD,
+                  "bulkDensity" = deepData$BD,
+                  "perC" = deepData$perC,
+                  "perN" = deepData$perN,
+                  stringsAsFactors = FALSE)
+
+View(dat)
+
+
+#Bulk Density Spline
+var="bulkDensity"
+##set the min and max 
+vlow<- min(deepData[,var],na.rm=TRUE)*1.0
+vhigh<-max(deepData[,var],na.rm=TRUE)*1.0
+
+#run spline
+DataSpline<-mpspline_tidy(
+  obj = dat,
+  var_name = var,
+  lam = 0.05,
+  d = depths,
+  vlow = vlow,
+  vhigh = vhigh
+)
+
+BDSpline<-DataSpline$est_dcm %>%
+  rename("bulkDensity"="SPLINED_VALUE")
+
+
+#%C Density Spline
+var="perC"
+##set the min and max 
+vlow<- min(deepData[,var],na.rm=TRUE)*2 #likely could be a little bit higher at 0-5
+vhigh<-max(deepData[,var],na.rm=TRUE)*1.0
+
+#run spline
+DataSpline<-mpspline_tidy(
+  obj = dat,
+  var_name = var,
+  lam = 0.1,
+  d = depths,
+  vlow = vlow,
+  vhigh = vhigh
+)
+
+perCSpline<-DataSpline$est_dcm%>%
+  rename(perC="SPLINED_VALUE")
+
+#%N Density Spline
+var="perN"
+##set the min and max 
+vlow<- min(deepData[,var],na.rm=TRUE)*2 #likely could be a little bit higher at 0-5
+vhigh<-max(deepData[,var],na.rm=TRUE)*1.0
+
+#run spline
+DataSpline<-mpspline_tidy(
+  obj = dat,
+  var_name = var,
+  lam = 0.1,
+  d = depths,
+  vlow = vlow,
+  vhigh = vhigh
+)
+
+perNSpline<-DataSpline$est_dcm%>%
+  rename(perN="SPLINED_VALUE")
+
+#Combine spline outputs and save
+
+DataSplineAll<-BDSpline%>%
+  left_join(., perCSpline)%>%
+  left_join(., perNSpline)
+
+write.csv(DataSplineAll, file = "DataSplineAll.csv")
+
+
+
+#calculate carbon stocks (another way??)
+#wholeDryWeight*perC= gC
+SiteData<- SiteData %>% add_column(gC)<- wholeDryWeight*perC
+SiteData <- gC=wholeDryWeight*perC
+
+SiteData <- SiteData %>%
+  mutate(gC=wholeDryWeight*perC)
+
+SiteData <- SiteData %>%
+  mutate(gC/1000000)
+
+
+gC/volume = gC/cm^3
+gC/cm^3/1000000= gC/m^3
+
+
+perC/100 * BD = gC/cm^3
+
+
+
+
+#data exploration
+ggplot(DataSplineAll,aes(x=LD, y=bulkDensity)) + geom_point ()
+ggplot(DataSplineAll,aes(x=LD, y=perC)) + geom_point ()
+ggplot(DataSplineAll,aes(x=LD, y=perN)) + geom_point ()
+
+#data exploration by farm
+DataSplineButterworks <- read.csv(file="DataSplineButterworks.csv", header=TRUE, sep=",")
+ggplot(DataSplineButterworks,aes(x=LD, y=bulkDensity)) + geom_point ()
+DataSplineLucas <- read.csv(file="DataSplineLucas.csv", header=TRUE, sep=",")
+ggplot(DataSplineButterworks,aes(x=LD, y=bulkDensity)) + geom_point ()
+DataSplineVershire <- read.csv(file="DataSplineVershire.csv", header=TRUE, sep=",")
+ggplot(DataSplineButterworks,aes(x=LD, y=bulkDensity)) + geom_point ()
+
+#power anaylsis 
+
+pwr.2p2n.test	two proportions unequal n
+pwr.anova.test	balanced one way anova
+pwr.chisq.test	chi square test
+pwr.f2.test	general linear model
+pwr.p.test	proportion one sample
+pwr.r.test	correlation
+pwr.r.test	t-test (two samples with unequal n)
+
+#ORPHANS
+
+#******************Location 
+  # work with Nclimgrid data  
+  library(raster)
+
+r <- brick("nclimgrid_tavg.nc")
+
+xy <- SpatialPoints(cbind(-81.8125, 24.5625))
+
+result <- extract(r, xy, sp=T)
+
+
+
+result$X2023.07.01   
+
+
+# Install and load required libraries
+install.packages("ggplot2")
+install.packages("sf")
+install.packages("maps")
+install.packages("mapdata")
+
+library(ggplot2)
+library(sf)
+library(maps)
+library(mapdata)
+library(raster)
+
+# Get the map data for Vermont
+vermont_map <- map_data("state")
+vermont_map <- subset(vermont_map, region == "vermont")
+
+# Plot the map and data points
+ggplot() +
+  geom_polygon(data = vermont_map, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+  geom_point(data = deepData, aes(x = longitude, y = latitude), color = "red", size = 3) +
+  coord_fixed(1.3) +  # Fix aspect ratio
+  labs(title = "Location of pastures sampled in Vermont",
+       x = "Longitude",
+       y = "Latitude") +
+  theme_minimal()
+
+
+#weather_climate data summary
+weather_history(
+  c(44.98630, -73.30327), 
+  "2000-01-01", "2022-01-01",
+  daily= c("precipitation_sum","precipitation_hours"),
+  response_units= list(precipitation_unit = "inch")
+)
+apply(array, margin, ...)
+
+# Install packages if not already installed
+install.packages("nasapower")
+install.packages("dplyr")
+install.packages("lubridate")
+
+# Load the libraries
+library(nasapower)
+library(dplyr)
+library(lubridate)
+# Define the function to get NASA POWER data for a given location and date range
+get_weather_data <- function(lon, lat, start_date, end_date) {
+  power_data <- get_power(
+    community = "AG",
+    pars = c("T2M_MAX", "T2M_MIN", "PRECTOT"),
+    temporal_average = "DAILY",
+    lonlat = c(lon, lat),
+    dates = c(start_date, end_date)
+  )
+  return(power_data)
+}
+
+# Define the date range for the weather data retrieval
+start_date <- "2000-01-01"
+end_date <- "2023-12-31"
+
+# Retrieve weather data for each location in deepData
+weather_data_list <- lapply(1:nrow(deepData), function(i) {
+  get_weather_data(deepData$longitude[i], deepData$latitude[i], start_date, end_date)
+})
+
+# Combine the results into a single data frame
+weather_data_combined <- do.call(rbind, weather_data_list)
+
+# View the weather data
+head(weather_data_combined)

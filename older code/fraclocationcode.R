@@ -93,6 +93,21 @@ xy <- SpatialPoints(cbind(-81.8125, 24.5625))
     scale_color_discrete(name = "Farm Type", labels = levels(merged_data$Type.x)) +  # Custom legend labels
     theme_minimal()
   
+  
+  #improve map
+  
+  ggplot() +
+    geom_polygon(data = vermont_map, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+    geom_point(data = merged_data, aes(x = lon, y = lat, color = Type.x), size = 3) +  # Mapping Type.x to color
+    coord_fixed(1.3) +  # Fix aspect ratio
+    labs(title = "Sample locations in Vermont",
+         x = "Longitude",
+         y = "Latitude",
+         color = "Crop Type") +  # Legend title
+    scale_color_discrete(name = "Crop Type", labels = levels(merged_data$Type.x)) +  # Custom legend labels
+    theme_minimal()
+  
+  
   #add soils data to map of plots colored by field type
   # Assuming 'soil_texture_class' is a column in the 'data' dataframe
   # Load soil data for Vermont (FIND THIS)

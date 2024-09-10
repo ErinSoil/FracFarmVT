@@ -716,9 +716,3 @@ field_anova<- aov(propM~Type.x, data=data)
 summary(field_anova)  
 
 TukeyHSD(field_anova)
-
-
-# Assuming 'data' is your data frame and 'logitpropM' is the column name for POC
-mean_propmaoc <- mean(data$logitpropM, na.rm = TRUE)
-
-print(paste("The mean Prop MAOC is", round(mean_propmaoc, 2), "%"))
