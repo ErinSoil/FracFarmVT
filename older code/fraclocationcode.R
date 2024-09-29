@@ -9,6 +9,8 @@ library(ggplot2)
 library(dplyr)
 library(openmeteo)
 
+install.packages("RColorBrewer")
+library(RColorBrewer)
 ##call in the analytical data
 Loc <- read.csv(file="Location.csv", header=TRUE, sep=",")
 data <- read.csv("data.csv")
@@ -29,6 +31,55 @@ weather_history(
            na.action = na.exclude, 
            method = "ML")
   summary(m1)
+  
+   # Find Field_Code with NA in location
+  na_field_codes <- data %>%
+    filter(is.na("lat")) %>%
+    group_by(Field_Code) %>%
+    summarise(count_na = n(), .groups = 'drop')
+  # Find rows where either lon or lat is NA
+  na_field_codes <- Loc %>%
+    filter(is.na(lon) | is.na(lat))
+  
+  # Print result
+  print(na_rows)
+  # Print result
+  print(na_field_codes)
+  
+  # Find Field_Code where either lon or lat is NA
+  na_field_codes <- Loc[is.na(Loc$lon) | is.na(Loc$lat), "Field_Code"]
+  
+  # Print result
+  print(na_field_codes)
+  
+  
+  
+  
+  # Check if there are any NA values in Type.x
+  any_na <- Loc %>%
+    summarise(any_na = any(is.na(Type.x))) %>%
+    pull(any_na)
+  
+  # Print result
+  if (any_na) {
+    print("There are NA values in Type.x")
+  } else {
+    print("There are no NA values in Type.x")
+  }
+  View(Loc)
+  
+  # Check if there are any NA values in Lon
+  any_na <- Loc %>%
+    summarise(any_na = any(is.na(lon))) %>%
+    pull(any_na)
+  
+  # Print result
+  if (any_na) {
+    print("There are NA values in Long")
+  } else {
+    print("There are no NA values in Long")
+  }
+  
   
   
   # work with Nclimgrid data  
@@ -76,37 +127,82 @@ xy <- SpatialPoints(cbind(-81.8125, 24.5625))
  
   
   # Assuming 'Field_Code' is the shared column between vermont_map and data
+  data$Type.x <- as.character(data$Type.x)  # Convert factor to character
+  data$Type.x[data$Type.x == "Field Crops"] <- "Wheat"
+  data$Type.x <- factor(data$Type.x)  # Convert back to factor
+  data$Type.x <- droplevels(data$Type.x)
   merged_data <- merge(Loc, data, by = "Field_Code", all.x = TRUE)
+  
+
+  # Replace "Field Crops" with "Wheat", convert to factor, and drop unused levels
+  data <- data %>%
+    mutate(Type.x = as.character(Type.x)) %>%       # Convert factor to character
+    mutate(Type.x = recode(Type.x, "Field crops" = "Wheat")) %>%  # Replace "Field Crops" with "Wheat"
+    mutate(Type.x = factor(Type.x)) %>%              # Convert back to factor
+    mutate(Type.x = droplevels(Type.x))              # Drop unused levels
+  
+  # Merge data with Loc by "Field_Code"
+  merged_data <- merge(Loc, data, by = "Field_Code", all.x = TRUE)
+  
+  # Print the merged data
+  print(merged_data)
+  
+  filtered_data <- merged_data %>%
+    filter(Type.x != "Wheat", "Corn", "Hay", "Pasture", "Veg")
+  
   
   # Convert Type.x to a factor for correct color mapping
   merged_data$Type.x <- factor(merged_data$Type.x)
   
+  cleaned_data <- merged_data %>%
+    filter(!is.na(lon) & !is.na(lat))
+  
+  levels(merged_data$Type.x)
+  
   #make a map by field type
   ggplot() +
     geom_polygon(data = vermont_map, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
-    geom_point(data = merged_data, aes(x = lon, y = lat, color = Type.x), size = 3) +  # Mapping Type.x to color
+    geom_point(data = merged_data, aes(x = lon, y = lat, color = Type.x), size = 3, alpha=.5) +  # Mapping Type.x to color
     coord_fixed(1.3) +  # Fix aspect ratio
-    labs(title = "Latitude and Longitude Points on the Map of Vermont",
-         x = "Longitude",
-         y = "Latitude",
-         color = "Farm Type") +  # Legend title
-    scale_color_discrete(name = "Farm Type", labels = levels(merged_data$Type.x)) +  # Custom legend labels
-    theme_minimal()
-  
-  
-  #improve map
-  
-  ggplot() +
-    geom_polygon(data = vermont_map, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
-    geom_point(data = merged_data, aes(x = lon, y = lat, color = Type.x), size = 3) +  # Mapping Type.x to color
-    coord_fixed(1.3) +  # Fix aspect ratio
-    labs(title = "Sample locations in Vermont",
+    labs(title = "",
          x = "Longitude",
          y = "Latitude",
          color = "Crop Type") +  # Legend title
     scale_color_discrete(name = "Crop Type", labels = levels(merged_data$Type.x)) +  # Custom legend labels
     theme_minimal()
   
+
+  #improve map
+
+  ggplot() +
+    geom_polygon(data = vermont_map, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+    geom_point(data = merged_data, aes(x = lon, y = lat, color = Type.x), size = 3, alpha=.5) +  # Mapping Type.x to color
+    coord_fixed(1.3) +  # Fix aspect ratio
+    labs(title = "Sample locations in Vermont",
+         x = "Longitude",
+         y = "Latitude",
+         color = "Crop Type") +  # Legend title
+    scale_color_brewer(palette = "Set3", name = "Crop Type", labels = levels(merged_data$Type.x)) +  # Apply BrBG palette
+    theme_minimal()
+  
+
+  # Plotting. Figure 1. This is the correct code
+ # Remove rows with NA in 'Type.x'
+  merged_data_clean <- merged_data %>%
+    filter(!is.na(Type.x)) 
+  ggplot() +
+    geom_polygon(data = vermont_map, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+    geom_point(data = merged_data_clean, aes(x = lon, y = lat, color = Type.x), size = 3, alpha = 0.5) +  # Mapping Type.x to color
+    coord_fixed(1.3) +  # Fix aspect ratio
+    labs(title = "",
+         x = "Longitude",
+         y = "Latitude",
+         color = "Crop Type") +  # Legend title
+    scale_color_brewer(palette = "Set3", name = "Crop Type", 
+                       labels = levels(merged_data_clean$Type.x)) +  # Apply Set3 palette
+    theme_minimal()
+  
+
   
   #add soils data to map of plots colored by field type
   # Assuming 'soil_texture_class' is a column in the 'data' dataframe

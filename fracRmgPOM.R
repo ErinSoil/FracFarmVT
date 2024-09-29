@@ -236,41 +236,72 @@ regression_model_POC <- lm(mgCpergSoilP ~ overall.score, data = data)
 summary(regression_model_POC)
 
   # Create a plot with the regression line
-POC_health <- ggplot(data, aes(x = overall.score, y = mgCpergSoilP)) +
-    geom_point() +
-    stat_smooth(method = "lm", se = FALSE, color = "black") +
+POC_health <- ggplot(data, aes(x = overall.score, y = mgCpergSoilP, color=AP)) +
+    geom_point(alpha = 0.5) +
+    stat_smooth(method = "lm", se = FALSE, color= "AP") +
     labs(x = "Soil Health Index",
          y = expression("mg POC g"^-1~"soil")) +
     theme_minimal()
-  
- 
-  # Perform linear regression MAOC
+POC_health
+
+
+# Remove rows with NA values in the relevant columns
+data_clean <- na.omit(data[, c("overall.score", "mgCpergSoilP", "AP")])
+
+POC_health <- ggplot(data_clean, aes(x = overall.score, y = mgCpergSoilP, color = AP)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm", se = FALSE) +  # 'color' aesthetic in ggplot will be used
+  labs(
+    x = "Soil Health Index",
+    y = expression("mg POC " * g^{-1} * " soil")
+  ) +
+  theme_minimal()
+
+POC_health
+# Remove rows with NA values in the relevant columns
+data_clean <- na.omit(data[, c("overall.score", "mgCpergSoilM", "AP")])
+
+MAOC_health <- ggplot(data_clean, aes(x = overall.score, y = mgCpergSoilM, color = AP)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm", se = FALSE) +  # 'color' aesthetic in ggplot will be used
+  labs(
+    x = "Soil Health Index",
+    y = expression("mg MAOC " * g^{-1} * " soil")
+  ) +
+  theme_minimal()
+
+MAOC_health
+
+ggsave("POC_health.jpeg", width = 15, height = 8)
+
+   # Perform linear regression MAOC
   regression_model_MAOC <- lm(mgCpergSoilM ~ overall.score, data = data)
-  summary(regression_model_MAOC)
+  summary
   
+
   # Create a plot with the regression line
-  MAOC_health <- ggplot(data, aes(x = overall.score, y = mgCpergSoilM)) +
-    geom_point() +
+  MAOC_health <- ggplot(data, aes(x = overall.score, y = mgCpergSoilM, color=AP)) +
+    geom_point(alpha = 0.5) +
     stat_smooth(method = "lm", se = FALSE, color = "black") +
     labs(x = "Soil Health Index",
          y = expression("mg MAOC g"^-1~"soil")) +
     theme_minimal()
+  ggsave("MAOC_health.jpeg", width = 15, height = 8)
   
- 
-  # Perform linear regression Prop MAOC
+   # Perform linear regression Prop MAOC
   regression_model_propMAOC <- lm(logitpropM ~ overall.score, data = data)
   summary(regression_model_propMAOC)
   
   # Create a plot with the regression line
-  PropM_health <- ggplot(data, aes(x = overall.score, y = logitpropM)) +
-    geom_point() +
+  PropM_health <- ggplot(data, aes(x = overall.score, y = logitpropM, color=AP)) +
+    geom_point(alpha = 0.5) +
     stat_smooth(method = "lm", se = FALSE, color = "black") +
     labs(x = "Soil Health Index",
          y = expression("Proportion of carbon as MAOC")) +
     theme_minimal()
-  
-  ggarrange(POC_health, MAOC_health, PropM_health,nrow=1,ncol=3, common.legend=T, legend="left", labels=c("a","b", "c"))
-  
+  ggsave("PropM_health.jpeg", width = 15, height = 8)
+  soilhealth3panel<- ggarrange(POC_health, MAOC_health, PropM_health,nrow=1,ncol=3, common.legend=T, legend="left", labels=c("a","b", "c"))
+ggsave("soilhealth3panel.jpeg", width = 15, height = 8)
   
   # Define the coefficient for soil health regression (slopes)
   coef_POC <- .257  # in mg find in model summary
@@ -518,8 +549,8 @@ summary(m2P)
 anova(m1P, m2P)
 
 m3P=gls(mgCpergSoilP~ppt.cm*tmeanC
-           +aggregate_stability+active_carbon 
-        , data=data, na.action=na.exclude, method="ML")
+           +aggregate_stability+active_carbon+ph, 
+         data=data, na.action=na.exclude, method="ML")
 summary(m3P)
 anova(m2P,m3P)
 anova(m3P)
@@ -550,7 +581,7 @@ summary(R4) #r2=.4825
 #check assumptions, distrubution of residuals
 #final model should use REML
 m3P=gls(mgCpergSoilP~ppt.cm*tmeanC
-        +aggregate_stability+active_carbon,
+        +aggregate_stability+active_carbon+ph,
         data=data, na.action=na.exclude, method="REML") 
 summary(m3P)
 ####predict(x= aggregate_stability) percent increase over the range of value obererved. 
@@ -645,20 +676,18 @@ mgPOM_pptC
 ggsave("mgPOM_ppt_tmeanC.jpeg", width = 4, height = 3)
 
 
-#ppt and tmeanC, option 2
+#ppt and tmeanC, option 2, Figure 4 Final
 summary(data$ppt.cm)
 pred_tmeanppt <- ggpredict(m3P, terms = c("tmeanC","ppt.cm[101,110]"))
 pred_tmeanppt$ppt_group <- pred_tmeanppt$group
 levels(pred_tmeanppt$ppt_group) <- c("low (92-104)",  
                                    "high (104-142)")
-
 data <- data %>%
   drop_na(ppt.cm) %>% 
    dplyr::mutate(ppt_group = cut(ppt.cm, breaks = c(92,104,142)))
-
  levels(data$ppt_group) <- c("low (92-104)",  
                             "high (104-142)")
- mgPOM_tmeanppt <-data %>% 
+  mgPOM_tmeanppt <-data %>% 
    ggplot() +
    geom_point(aes(x = tmeanC, y = mgCpergSoilP, col = ppt_group), #plot your data
               size = 1.5, alpha = 0.5) +
@@ -666,46 +695,205 @@ data <- data %>%
              lwd = 1) +
    own_theme+
    #theme(legend.position = "none") +
-   scale_y_continuous(expression("mg POC g"^-1,"soil")) +
-   scale_x_continuous(expression("Mean Annual Temperature(C)"),
+   scale_y_continuous(expression("mg POC g"^-1 * "soil")) +
+   scale_x_continuous(expression("Mean Annual Temperature(°C)"),
                       label = scales::comma) +
-   scale_color_manual(values = c("blue", "red")) # adjust colors if needed
- 
+   scale_color_manual(name = "Mean Annual Precipitation (cm)", values = c("red", "blue"))+
+    theme_minimal()
+  theme(
+    axis.title = element_text(size = 16),
+    axis.text = element_text(size = 14),
+    legend.title = element_text(size = 16),
+    legend.text = element_text(size = 14)
+  )
  mgPOM_tmeanppt
+ ggsave("mgPOM_Figure4.jpeg", width = 10, height = 8)
+ 
+ 
+ #fix font
+ library(ggplot2)
+ library(dplyr)
+ library(ggeffects)  # Ensure ggeffects is loaded for ggpredict function
+ 
+ # Generate predictions
+ pred_tmeanppt <- ggpredict(m3P, terms = c("tmeanC", "ppt.cm[101,110]"))
+ 
+ # Assign and update the ppt_group levels in pred_tmeanppt
+ pred_tmeanppt$ppt_group <- pred_tmeanppt$group
+ pred_tmeanppt$ppt_group <- factor(pred_tmeanppt$ppt_group, 
+                                   levels = c("low", "high"),
+                                   labels = c("low (92-104)", "high (104-142)"))
+ 
+ # Prepare the data
+ data <- data %>%
+   drop_na(ppt.cm) %>%
+   mutate(ppt_group = cut(ppt.cm, breaks = c(92, 104, 142),
+                          labels = c("low (92-104)", "high (104-142)")))
+ 
+ # Plot the data
+ mgPOM_tmeanppt <- ggplot(data) +
+   geom_point(aes(x = tmeanC, y = mgCpergSoilP, color = ppt_group), 
+              size = 1.5, alpha = 0.5) +
+   geom_line(data = pred_tmeanppt, aes(x = x, y = predicted, color = ppt_group), 
+             size = 1) +
+   labs(
+     title = "Relationship between Mean Annual Temperature and mg POC per g Soil",
+     x = "Mean Annual Temperature (°C)",
+     y = expression("mg POC g"^-1 * "soil"),
+     color = "Mean Annual Precipitation (cm)"
+   ) +
+   scale_color_manual(values = c("low (92-104)" = "red", "high (104-142)" = "blue")) +
+   theme_minimal() +
+   theme(
+     axis.title = element_text(size = 14),
+     axis.text = element_text(size = 12),
+     legend.title = element_text(size = 12),
+     legend.text = element_text(size = 10)
+   )
+ 
+ # Display the plot
+ print(mgPOM_tmeanppt)
+ 
+ # Save the plot
+ ggsave("mgPOM_Figure4.jpeg", plot = mgPOM_tmeanppt, width = 10, height = 8)
+ ``
+ 
+ 
+ 
+ 
+ #tying to get line to end
+ #ppt and tmeanC, option 2
+ # Ensure predictions are within the range of observed tmeanC values
+ # Identify the range of observed data
+
+  # Determine the range of observed data for both factors
+ range_tmeanC <- range(data$tmeanC, na.rm = TRUE)
+ range_ppt_cm <- range(data$ppt.cm, na.rm = TRUE)
+ 
+ # Generate predictions across a grid within the range of observed data
+ tmeanC_seq <- seq(from = range_tmeanC[1], to = range_tmeanC[2], length.out = 100)
+ ppt_cm_seq <- seq(from = range_ppt_cm[1], to = range_ppt_cm[2], length.out = 100)
+ 
+ # Create a data frame for prediction
+ prediction_data <- expand.grid(tmeanC = tmeanC_seq, ppt.cm = ppt_cm_seq)
+ 
+ # Generate predictions using the model
+ predictions <- predict(m3P, newdata = prediction_data, interval = "confidence")
+
+ 
+summary(m3P)
+ # Combine predictions with the prediction data
+ pred_tmeanppt <- cbind(prediction_data, predicted = predictions)
+ 
+
+ pred_tmeanppt <- ggpredict(m3P, terms = c("tmeanC","ppt.cm[101,110]"))
+ pred_tmeanppt$ppt_group <- pred_tmeanppt$group
+ levels(pred_tmeanppt$ppt_group) <- c("low (92-104)",  
+                                      "high (104-142)")
+ data <- data %>%
+   drop_na(ppt.cm) %>% 
+   dplyr::mutate(ppt_group = cut(ppt.cm, breaks = c(92,104,142)))
+ 
+ levels(data$ppt_group) <- c("low (92-104)",  
+                             "high (104-142)")
+ 
+ 
+ # Plot the data and the fitted line
+ mgPOM_tmeanppt <- data %>%
+   ggplot() +
+   geom_point(aes(x = tmeanC, y = mgCpergSoilP, col = ppt_group), size = 1.5, alpha = 0.5) +
+   geom_line(data = pred_tmeanppt, aes(x = x, y = predicted, col = ppt_group), lwd = 1) +
+   own_theme +
+   scale_y_continuous(expression("mg POC g"^-1~"soil")) +
+   scale_x_continuous(expression("Mean Annual Temperature (°C)"),
+                      label = scales::comma) +
+   scale_color_manual(values = c("red", "blue")) +
+   labs(color = "Precipitation Group")
+ 
+ print(mgPOM_tmeanppt)
+ 
+ ggsave(" mgPOM_tmeanppt.jpeg", width = 10, height = 8)
 view(data)
 
 #for agg stability color by AP
-pred_aggregate_stability <- ggpredict(m3P, terms = c("aggregate_stability"))
+pred_aggregate_stability <- ggpredict(m3P, terms = c("aggregate_stability","AP"))
 mgPOM_aggregate_stability <-data %>% 
   ggplot() +
-  geom_point(aes(x = aggregate_stability, y = mgCpergSoilP,color= AP),
+  geom_point(aes(x = aggregate_stability, y = mgCpergSoilP,color=AP),
                      size = 1.5, alpha = 0.5) +
-  geom_line(pred_aggregate_stability, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
+  geom_line(pred_aggregate_stability, mapping = aes(x=x, y=predicted,color=group), #plot the model's prediction (based on linear )
             lwd = 1) +
   own_theme+
   #theme(legend.position = "none") +
-  scale_y_continuous(expression("mg POC g"^-1,"soil"))+
-  scale_x_continuous(expression("Aggregate stability (%)"),
+  scale_y_continuous(
+    name = expression("mg POC " * g^{-1} * " soil")
+  )
+scale_x_continuous(expression("Aggregate Stability (%)"),
                      label = scales::comma) 
 
 mgPOM_aggregate_stability
-ggsave("mgPOM_aggregate_stability.jpeg", width = 4, height = 3)
+ggsave("mgPOM_aggregate_stability.jpeg", width = 15, height = 8, units="cm")
 
-#for agg stability plain
+library(ggplot2)
+library(ggeffects)
+library(dplyr)
+
+# Define the coefficient for active carbon
+coef_activecarbon <-  0.01317  # in ppm
+# Define the mean value of POC (baseline POC)
+mean_POC <- 8.17  # Replace with the actual mean value from your data
+# Define the ppm increase in active carbon
+ppm_increase <- 100  # For a 100 ppm increase in active carbon
+
+# Calculate the absolute increase in POC for the given ppm increase in active carbon
+absolute_increase_poc <- coef_activecarbon * ppm_increase
+
+# Calculate the percent increase in POC based on the mean value
+percent_increase_poc <- (absolute_increase_poc / mean_POC) * 100
+
+# Print the result
+print(paste("Percent increase in POC for a", ppm_increase, "ppm in active carbon is", round(percent_increase_poc, 2), "%"))
+
+
+# Assuming 'data' is your data frame and 'mgCpergSoilP' is the column name for POC
+mean_poc <- mean(data$mgCpergSoilP, na.rm = TRUE)
+
+# Print the mean POC value
+print(paste("The mean POC is", round(mean_poc, 2), "mg"))
+
+
+
+# Generate predictions from the model
 pred_aggregate_stability <- ggpredict(m3P, terms = c("aggregate_stability"))
-mgPOM_aggregate_stability <-data %>% 
-  ggplot() +
-  geom_point(aes(x = aggregate_stability, y = mgCpergSoilP),
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_aggregate_stability, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
-  #theme(legend.position = "none") +
-  scale_y_continuous(expression("mg POC g"^-1,"soil"))+
-  scale_x_continuous(expression("Aggregate Stability (%)"),
-                     label = scales::comma) 
+# Convert the ggpredict object to a data frame
+pred_df <- as.data.frame(pred_aggregate_stability)
 
-mgPOM_aggregate_stability
+# Create the plot
+
+mgPOM_aggregate_stability <- data %>%
+  ggplot(aes(x = aggregate_stability, y = mgCpergSoilP)) +
+  geom_point(size = 1.5, alpha = 0.5) +
+  geom_line(data = pred_df, aes(x = x, y = predicted, color = "black"), lwd = 1) +  # Plot the model's prediction
+  own_theme +  # Ensure 'own_theme' is defined or remove it
+  theme(legend.position = "none") +
+   scale_y_continuous(
+    name = expression("mg POC " * g^{-1} * " soil")) +
+  scale_x_continuous(name = expression("Aggregate Stability (%)"),
+    labels = scales::comma) 
+  mgPOM_aggregate_stability
+  
+  mgPOM_aggregate_stability <- data %>%
+    ggplot(aes(x = aggregate_stability, y = mgCpergSoilP)) +
+    geom_point(size = 1.5, alpha = 0.5) +
+    geom_line(data = pred_df, aes(x = x, y = predicted), color = "black", lwd = 1) +  # Plot the model's prediction
+    own_theme +  # Ensure 'own_theme' is defined or remove it
+    theme(legend.position = "none") +
+    scale_y_continuous(name = expression("mg POC " * g^{-1} * " soil")) +
+    scale_x_continuous(name = expression("Aggregate Stability (%)"),
+                       labels = scales::comma)
+  
+  mgPOM_aggregate_stability
+  
 ggsave("mgPOM_aggregate_stability.jpeg", width = 4, height = 3)
 
 # Define the coefficient for aggregate stability
@@ -752,23 +940,29 @@ mean_poc <- mean(data$mgCpergSoilP, na.rm = TRUE)
 # Print the mean POC value
 print(paste("The mean POC is", round(mean_poc, 2), "mg"))
 
+#Figure 3b
 
-#Active Carbon
+# Generate predictions from the model
 pred_active_carbon <- ggpredict(m3P, terms = c("active_carbon"))
-mgPOM_active_carbon <-data %>% 
-  ggplot() +
-  geom_point(aes(x = active_carbon, y = mgCpergSoilP), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_active_carbon, mapping = aes(x=x, y=predicted), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  own_theme+
+# Convert the ggpredict object to a data frame
+pred_df <- as.data.frame(pred_active_carbon)
+
+# Create the plot
+mgPOM_active_carbon <- data %>%
+  ggplot(aes(x = active_carbon, y = mgCpergSoilP)) +
+  geom_point(size = 1.5, alpha = 0.5) +
+  geom_line(data = pred_df, aes(x = x, y = predicted), color = "black", lwd = 1) +  # Change color of the line
+  own_theme +  # Ensure 'own_theme' is defined or remove it
   theme(legend.position = "none") +
-  scale_y_continuous(expression("mg POC g"^-1,"soil"))+
-  scale_x_continuous(expression("Active Carbon (ppm)"),
-                     label = scales::comma) 
+  scale_y_continuous(
+    name = expression("mg POC " * g^{-1} * " soil")
+  ) +
+  scale_x_continuous(
+    name = expression("Active Carbon (ppm)"),
+    labels = scales::comma
+  )
 
 mgPOM_active_carbon
-
 ggarrange(mgPOM_aggregate_stability,mgPOM_active_carbon,nrow=1, common.legend=T, legend="left", labels=c("a","b"))
 
 #ppt on own
@@ -892,11 +1086,37 @@ summary(field_anova)
 
 TukeyHSD(field_anova)
 
+# Calculate means by field type
+means_by_field_type <- data %>%
+  group_by(Type.x) %>%
+  summarise(mean_mgCpergSoilP = mean(mgCpergSoilP, na.rm = TRUE))
+
+print(means_by_field_type)
+
 #anova by field type to see differences 
-field_anova<- aov(logitpropM~Type.x, data=data)
+field_anova<- aov(mgCpergSoilM~Type.x, data=data)
 summary(field_anova)  
 
 TukeyHSD(field_anova)
+
+# Calculate means by field type
+means_by_field_type <- data %>%
+  group_by(Type.x) %>%
+  summarise(mean_mgCpergSoilM = mean(mgCpergSoilM, na.rm = TRUE))
+
+print(means_by_field_type)
+
+
+#anova by field type to see differences 
+field_anova<- aov(propM~Type.x, data=data)
+summary(field_anova)  
+# Calculate means by field type
+TukeyHSD(field_anova)
+means_by_field_type <- data %>%
+  group_by(Type.x) %>%
+  summarise(mean_propM = mean(propM, na.rm = TRUE))
+
+print(means_by_field_type)
 
 
 # Create the new column 'AP'
@@ -1067,15 +1287,94 @@ texture_anova<- aov(mgCpergSoilP~soil_texture_class, data=data)
 summary(texture_anova)  
 
 TukeyHSD(texture_anova)
+# Create a new column Tillage_Category with descriptive labels
+data <- data %>%
+  mutate(Tillage_Category = factor(Tillage_1to4,
+                                   levels = c(1, 2, 3, 4),
+                                   labels = c("No Till", 
+                                              "1-7 inch Till", 
+                                              "7-9 inch Till", 
+                                              ">9 inch Till")))
+
+
+
+# Check the new column
+summary(data$Tillage_Category)
+
+
+# Update Type.x: Change "Field crops" to "Wheat"
+data <- data %>%
+  mutate(Type.x = recode(Type.x, "Field crops" = "Wheat"))
+
+# Check the result to ensure the changes were applied correctly
+table(data$Type.x)
+library(dplyr)
+
+# Convert Type.x to character if it is a factor
+data <- data %>%
+  mutate(Type.x = as.character(Type.x))
+
+# Update Type.x: Change "Field crops" to "Wheat"
+data <- data %>%
+  mutate(Type.x = recode(Type.x, "Field crops" = "Wheat"))
+
+library(dplyr)
+
+# Inspect the data type and unique values in Type.x
+str(data$Type.x)  # Check the structure of the column
+unique(data$Type.x)  # Check unique values
+
+# Convert Type.x to character if it is a factor
+data <- data %>%
+  mutate(Type.x = as.character(Type.x))
+
+# Update Type.x: Change "Field crops" to "Wheat"
+data <- data %>%
+  mutate(Type.x = ifelse(Type.x == "Field crops", "Wheat", Type.x))
+
+# Optionally convert back to factor
+data$Type.x <- factor(data$Type.x)
+
+# Check the result to ensure the changes were applied correctly
+table(data$Type.x)
+
+
+
+
+# Check the result to ensure the changes were applied correctly
+table(data$Type.x)
 
 # Create the stacked bar plot
-ggplot(data, aes(x = Type.x, fill = factor(Tillage_1to4))) +
+
+ggplot(data, aes(x = Type.x, fill = factor(Tillage_Category))) +
   geom_bar(position = "stack") +
-  labs(title = "Distribution of Tillage Categories by Field Type",
-       x = "Field Type",
-       y = "Count",
+  labs(title = "",
+       x = "Crop Type",
+       y = "Number of Fields",
        fill = "Tillage Category") +
   theme_minimal()
+
+library(dplyr)
+
+# Inspect the data type and unique values in Type.x
+str(data$Type.x)  # Check the structure of the column
+unique(data$Type.x)  # Check unique values
+
+# Convert Type.x to character if it is a factor
+data <- data %>%
+  mutate(Type.x = as.character(Type.x))
+
+# Update Type.x: Change "Field crops" to "Wheat"
+data <- data %>%
+  mutate(Type.x = ifelse(Type.x == "Field crops", "Wheat", Type.x))
+
+# Reorder and convert Type.x to factor with the desired levels
+data$Type.x <- factor(data$Type.x,
+                      levels = c("Hay", "Pasture", "Corn", "Veg", "Wheat"))
+
+# Check the result to ensure the changes were applied correctly
+table(data$Type.x)
+
 
 # Create the stacked bar plot
 ggplot(data, aes(x = Type.x, fill = factor(till.passes))) +
@@ -1094,15 +1393,16 @@ regression_modelPM <- lm(mgCpergSoilM ~ mgCpergSoilP, data = data)
 summary(regression_modelPM)
 
 
-ggplot(data, aes(x = mgCpergSoilP, y = mgCpergSoilM)) +
-  geom_point() +
+Figure8<-ggplot(data, aes(x = mgCpergSoilP, y = mgCpergSoilM)) +
+  geom_point(alpha = 0.5) +
   stat_smooth(method = "lm", se = FALSE, color = "black") +
   labs(
     x = expression(paste("mg POC ", g^{-1}, " soil")),
     y = expression(paste("mg MAOC ", g^{-1}, " soil"))
   ) +
   theme_minimal()
-
+Figure8
+ggsave("Figure8.jpeg", width = 15, height = 8)
   
   # Subset the data frame to get only the rows where Type.x is 'Field_crops'
   field_crops_samples <- subset(data, Type.x == "Field crops")
@@ -1273,15 +1573,47 @@ regression_model <- lm(mgCpergSoilP ~ Tillage_1to4, data = data)
 #Summarize the regression model
 summary(regression_model)
 
+#graph the regression
+
+# Create a new data frame with predictions
+data_with_predictions <- data %>%
+  mutate(predicted = predict(regression_model, newdata = data))
+
+library(ggplot2)
+library(dplyr)
+
+# Assuming regression_model is already created and data_with_predictions is calculated
+
+# Create a new data frame with predictions for plotting
+data_with_predictions <- data %>%
+  mutate(predicted = predict(regression_model, newdata = data)) %>%
+  group_by(Tillage_1to4) %>%
+  summarize(mean_predicted = mean(predicted), 
+            mean_mgCpergSoilP = mean(mgCpergSoilP), 
+            .groups = 'drop')
+
+# Plot the data
+ggplot(data, aes(x = Tillage_1to4, y = mgCpergSoilP)) +
+  geom_jitter(width = 0.2, size = 2, alpha = 0.5) +  # Scatter plot with jitter to avoid overplotting
+  geom_point(data = data_with_predictions, aes(x = Tillage_1to4, y = mean_predicted), color = "red", size = 3, shape = 1) +  # Predicted values
+  geom_line(data = data_with_predictions, aes(x = Tillage_1to4, y = mean_predicted, group = 1), color = "blue", size = 1) +  # Regression line
+  labs(title = "Regression of mgCpergSoilP on Tillage_1to4",
+       x = "Tillage Category",
+       y = "POC mg C per g Soil",
+       color = "Legend") +
+  scale_x_discrete(labels = c("1" = "No Till", "2" = "1-7inch Till", "3" = "7-9inch Till", "4" = ">9inch Till")) +  # Customize x-axis labels
+  theme_minimal()
+
+
 # Example scatter plot with jitter
 library(ggplot2)
 
-ggplot(data, aes(x = as.factor(Tillage_1to4), y = mgCpergSoilM)) +
+ggplot(data, aes(x = as.factor(Tillage_1to4), y = mgCpergSoilP)) +
   geom_boxplot(outlier.shape = NA, fill = "lightblue", alpha = 0.5) +
   geom_jitter(width = 0.3, height = 0, alpha = 0.7) +
   stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +
-  labs(x = "Tillage", y = "MAOM") +
-  ggtitle("Relationship between Tillage and MAOM") +
+  labs(x = "Tillage", y = "POC") +
+  ggtitle("Relationship between Tillage and POC") +
   theme_minimal()
 
 # Load necessary library
@@ -1327,6 +1659,35 @@ if (summary(anova_result)[[1]]$`Pr(>F)`[1] < 0.05) {
 } else {
   print("No significant difference between tillage groups.")
 }
+
+#compare the means
+# Calculate means of mgCpergSoilP for each Tillage Group
+means <- data %>%
+  group_by(Tillage_Grouped) %>%
+  summarise(Mean_mgCpergSoilP = mean(mgCpergSoilP, na.rm = TRUE))
+
+print(means)
+
+# Perform ANOVA
+anova_result <- aov(mgCpergSoilP ~ Tillage_Grouped, data = data)
+summary(anova_result)
+
+# If ANOVA is significant, perform Tukey's HSD test
+if (summary(anova_result)[[1]]$`Pr(>F)`[1] < 0.05) {
+  tukey_result <- TukeyHSD(anova_result)
+  print(tukey_result)
+  plot(tukey_result)
+} else {
+  print("No significant difference between tillage groups.")
+}
+
+#compare the means
+# Calculate means of mgCpergSoilM for each Tillage Group
+means <- data %>%
+  group_by(Tillage_Grouped) %>%
+  summarise(Mean_mgCpergSoilM = mean(mgCpergSoilM, na.rm = TRUE))
+
+print(means)
 
 # Create box plot with means
 ggplot(data, aes(x = Tillage_Grouped, y = mgCpergSoilM)) +
@@ -1413,6 +1774,30 @@ regression_model <- lm(active_carbon ~ Tillage_1to4, data = data)
 #Summarize the regression model
 summary(regression_model)
 
+library(ggplot2)
+library(dplyr)
+
+# Assuming regression_model is already created
+
+# Create a data frame with predictions for plotting
+data_with_predictions <- data %>%
+  mutate(predicted = predict(regression_model, newdata = data)) %>%
+  group_by(Tillage_1to4) %>%
+  summarize(mean_predicted = mean(predicted), 
+            mean_active_carbon = mean(active_carbon), 
+            .groups = 'drop')
+
+# Plot the data
+ggplot(data, aes(x = Tillage_1to4, y = active_carbon)) +
+  geom_jitter(width = 0.2, size = 2, alpha = 0.5) +  # Scatter plot with jitter to avoid overplotting
+  geom_point(data = data_with_predictions, aes(x = Tillage_1to4, y = mean_predicted), color = "red", size = 3, shape = 1) +  # Predicted values
+  geom_line(data = data_with_predictions, aes(x = Tillage_1to4, y = mean_predicted, group = 1), color = "blue", size = 1) +  # Regression line
+  labs(title = "Regression of Active Carbon on Tillage Category",
+       x = "Tillage Category",
+       y = "Active Carbon",
+       color = "Legend") +
+  scale_x_discrete(labels = c("1" = "No Till", "2" = "1-7inch Till", "3" = "7-9inch Till", "4" = ">9inch Till")) +  # Customize x-axis labels
+  theme_minimal()
 
 #tillage and POC
 
@@ -1482,3 +1867,91 @@ ggplot(data, aes(x = as.factor(Tillage_1to4), y = active_carbon)) +
   ggtitle("Relationship between Tillage and PoxC") +
   theme_minimal()
 
+# Calculate means and standard errors of mgCpergSoilP for each Tillage Category
+means_and_se <- data %>%
+  group_by(Tillage_1to4) %>%
+  summarise(
+    Mean_mgCpergSoilP = mean(mgCpergSoilP, na.rm = TRUE),
+    Std_Error = sd(mgCpergSoilP, na.rm = TRUE) / sqrt(n())  # Standard Error
+  )
+
+print(means_and_se)
+# Calculate means and standard errors of mgCpergSoilM for each Tillage Category
+means_and_se <- data %>%
+  group_by(Tillage_1to4) %>%
+  summarise(
+    Mean_mgCpergSoilM = mean(mgCpergSoilM, na.rm = TRUE),
+    Std_Error = sd(mgCpergSoilM, na.rm = TRUE) / sqrt(n())  # Standard Error
+  )
+
+print(means_and_se)
+
+
+# Calculate means, standard errors, and sample sizes of mgCpergSoilP for each Tillage Category
+means_and_stats <- data %>%
+  group_by(Tillage_1to4) %>%
+  summarise(
+    Mean_mgCpergSoilP = mean(mgCpergSoilP, na.rm = TRUE),
+    Std_Error = sd(mgCpergSoilP, na.rm = TRUE) / sqrt(n()),  # Standard Error
+    n = n()  # Sample size
+  )
+
+print(means_and_stats)
+
+# Perform ANOVA
+anova_result <- aov(mgCpergSoilP ~ Tillage_1to4, data = data)
+
+# Summarize the ANOVA result
+summary(anova_result)
+
+# Convert Tillage_1to4 to a factor
+data$Tillage_1to4 <- as.factor(data$Tillage_1to4)
+
+# Perform ANOVA
+anova_result <- aov(mgCpergSoilP ~ Tillage_1to4, data = data)
+
+# Summarize the ANOVA result
+summary(anova_result)
+
+# Apply Tukey's HSD test
+tukey_result <- TukeyHSD(anova_result)
+
+# Print the Tukey HSD result
+print(tukey_result)
+
+# Optionally, convert Tukey result to a data frame for better readability
+tukey_df <- as.data.frame(tukey_result$`Tillage_1to4`)
+print(tukey_df)
+
+
+# Convert Tillage_1to4 to a factor
+data$Tillage_1to4 <- as.factor(data$Tillage_1to4)
+
+# Perform ANOVA
+anova_result <- aov(mgCpergSoilM ~ Tillage_1to4, data = data)
+
+# Summarize the ANOVA result
+summary(anova_result)
+
+# Apply Tukey's HSD test
+tukey_result <- TukeyHSD(anova_result)
+
+# Print the Tukey HSD result
+print(tukey_result)
+
+# Optionally, convert Tukey result to a data frame for better readability
+tukey_df <- as.data.frame(tukey_result$`Tillage_1to4`)
+print(tukey_df)
+
+view (data)
+# Using base R with grepl
+search_term <- "manure"
+result <- data[grepl(search_term, data$column_name, ignore.case = TRUE), ]
+
+# Using dplyr
+library(dplyr)
+result <- data %>%
+  filter(grepl(search_term, column_name, ignore.case = TRUE))
+
+# Print the result
+print(result)

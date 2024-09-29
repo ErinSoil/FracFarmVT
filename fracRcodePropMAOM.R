@@ -564,14 +564,26 @@ propMAOM_3way <-data %>%
   facet_wrap(~clay_facet) +
   own_theme+
   #theme(legend.position = "none") +
-  scale_y_continuous(expression(paste("logitpropM"))) +
+  scale_y_continuous(expression(paste("Proportion of C as MAOC"))) +
   scale_x_continuous(expression("Mean Annual Temperature (°C)"),
                      label = scales::comma) +
-  guides(col=guide_legend(title="MAP (cm)")) +
-  scale_color_manual(values = c("lightblue", "blue")) # adjust colors if needed
+  guides(col=guide_legend(title="Mean Annual Precipitation (cm)")) +
+  scale_color_manual(values = c("red", "blue")) # adjust colors if needed
 
 propMAOM_3way
-ggsave("propMAOM_3way.jpeg", width = 6.5, height = 3)
+ggsave("propMAOM_3way.jpeg", width = 8, height = 4)
+Figure5 <-ggarrange(mgMAOM_3way,propMAOM_3way,nrow=1, common.legend=T, legend="right", labels=c("a","b"))
+ggsave("Figure5.jpeg", width = 20, height = 6, units="cm", dpi=300)
+
+#make pretty
+# Example adjustment for individual plots (modify as necessary)
+mgMAOM_3way <- mgMAOM_3way +
+  theme(legend.text = element_text(size = 6),  # Adjust legend text size
+        legend.title = element_text(size = 8))  # Adjust legend title size
+
+propMAOM_3way <- propMAOM_3way +
+  theme(legend.text = element_text(size = 6),  # Adjust legend text size
+        legend.title = element_text(size = 8))  # Adjust legend title size
 
 
 

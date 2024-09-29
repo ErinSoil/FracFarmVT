@@ -11,6 +11,7 @@ library(corrplot)
 library(nlme)
 library(ggeffects)
 library(emmeans)
+library(ggpubr)
 
 ##call in the analytical data
 data <- read.csv("data.csv")
@@ -283,7 +284,7 @@ anova(m2)
 anova (m1,m2)
 
 m3 = gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
-           active_carbon + aggregate_stability, 
+           active_carbon + aggregate_stability,
          data = data, 
          na.action = na.exclude, 
          method = "ML")
@@ -375,11 +376,11 @@ mgMAOM_aggregate_stability <-data %>%
             lwd = 1) +
   own_theme+
   theme(legend.position = "none") +
-  scale_y_continuous(expression("mg MAOC g"^-1,"soil"))+
+  scale_y_continuous(expression("mg MAOC g"^-1*"soil"))+
   scale_x_continuous(expression("Aggregate Stability (%)"),
               label = scales::comma) 
 mgMAOM_aggregate_stability
-ggsave("mgMAOM_aggregate_stability.jpeg", width = 4, height = 3)
+ggsave("mgMAOM_aggregate_stability.jpeg", width = 15, height = 8, units="cm")
   
 # Define the coefficient for aggregate stability
 coef_aggregate_stability <-  0.10780  # in mg find in model summary
@@ -417,16 +418,16 @@ mgMAOM_active_carbon <-data %>%
                                lwd = 1) +
           own_theme+
         theme(legend.position = "none") +
-                     scale_y_continuous(expression("mg MAOC g"^-1,"soil"))+
+                     scale_y_continuous(expression("mg MAOC g"^-1*"soil"))+
                      scale_x_continuous(expression("Active Carbon (ppm)"),
                                         label = scales::comma) 
                    mgMAOM_active_carbon
-ggsave("mgMAOM_active_carbon.jpeg", width = 4, height = 3)
+ggsave("mgMAOM_active_carbon.jpeg", width = 15, height = 8, units="cm")
  
 #get them side by side for presentation
-
+#Figure5
 ggarrange(mgMAOM_aggregate_stability,mgMAOM_active_carbon,nrow=1, common.legend=T, legend="left", labels=c("a","b"))
-
+ggsave("Figure5.jpeg", width = 15, height = 8, units="cm")
 
 # Assuming 'data' is your data frame and 'mgCpergSoilM' is the column name for POC
 mean_maoc <- mean(data$mgCpergSoilM, na.rm = TRUE)
@@ -454,7 +455,7 @@ print(paste("Percent increase in MAOC for a 1% increase in actice carbon is", ro
 
 
                   
-#for 3 way interaction of tmean, ppt, and texture
+#for 3 way interaction of tmean, ppt, and texture Figure 6 Final
 
 summary(data$soil_texture_clay)
 summary(data$ppt.cm)
@@ -479,7 +480,6 @@ levels(data$ppt_group) <- c("low (92-104)",
  
 levels(data$clay_facet) <- c("low clay (6-19%)",  
                                    "high clay (19-54%)")
-
 mgMAOM_3way <-data %>% 
    ggplot() +
    geom_point(aes(x = tmeanC, y = mgCpergSoilM, col = ppt_group), #plot your data
@@ -489,15 +489,15 @@ mgMAOM_3way <-data %>%
    facet_wrap(~clay_facet) +
    own_theme+
    #theme(legend.position = "none") +
-   scale_y_continuous(expression(paste("mg MAOM C g"^-1,"soil"))) +
+   scale_y_continuous(expression(paste("mg MAOC g"^-1,"soil"))) +
    scale_x_continuous(expression("Mean Annual Temperature (°C)"),
                       label = scales::comma) +
-   guides(col=guide_legend(title="MAP (cm)")) +
-   scale_color_manual(values = c("lightblue", "blue")) # adjust colors if needed
+   guides(col=guide_legend(title="Mean Annual Precipitation (cm)")) +
+   scale_color_manual(values = c("red", "blue")) 
  
 mgMAOM_3way
-ggsave("mgMAOM_3way.jpeg", width = 6.5, height = 3)
- 
+ggsave("mgMAOM_3way.jpeg", width = 8, height = 4)
+ #share legend and a, b, ggarrange
 #get slope for the lines in the 3 way 
 mylist<- list(ppt.cm=c(101,110),soil_texture_clay=c(10,32))
   
