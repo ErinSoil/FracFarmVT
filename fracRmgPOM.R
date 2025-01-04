@@ -3,6 +3,9 @@
 #setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
 setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
 
+##call in the analytical data
+data <- read.csv("data_pH.csv")
+
 #load your libraries
 library(tidyverse)
 library(ggplot2)
@@ -16,9 +19,14 @@ library(reshape2)
 library(car) # for Levene's Test
 library(ggpubr) # for easy plotting
 library(multcomp) # for Tukey's HSD test
+library(ggpubr)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+library(gridExtra)
 
 ##call in the analytical data
-data <- read.csv("data.csv")
+data <- read.csv("data_pH.csv")
 View(data)
 
 summary(data$OM30)
@@ -235,6 +243,7 @@ heatmap.2(as.matrix(contingency_table),
 regression_model_POC <- lm(mgCpergSoilP ~ overall.score, data = data)
 summary(regression_model_POC)
 
+view(data)
   # Create a plot with the regression line
 POC_health <- ggplot(data, aes(x = overall.score, y = mgCpergSoilP, color=AP)) +
     geom_point(alpha = 0.5) +
@@ -243,6 +252,814 @@ POC_health <- ggplot(data, aes(x = overall.score, y = mgCpergSoilP, color=AP)) +
          y = expression("mg POC g"^-1~"soil")) +
     theme_minimal()
 POC_health
+
+# Remove NA values from the AP column
+data_clean <- data %>%
+  filter(!is.na(AP))
+
+# Replace 'pere' with 'perennial' in the AP column
+data$AP[data$AP == "pere"] <- "perennial"
+view(data)
+#Figure7
+# Create a plot with the regression line
+POC_health <- ggplot(data_clean, aes(x = overall.score, y = mgCpergSoilP, color = AP)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm", se = FALSE) +
+  labs(x = "Soil Health Index",
+       y = expression("mg POC g"^-1~"soil")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Replace color1 and color2 with your desired colors
+                     labels = c("perennial" = "pere")) +  # Change 'pere' to 'perennial'
+  theme_minimal()
+
+POC_health
+# Replace 'pere' with 'perennial' in the AP column
+data_clean$AP[data_clean$AP == "pere"] <- "perennial"
+view(data_clean)
+
+# Create a plot with the regression line
+POC_health <- ggplot(data_clean, aes(x = overall.score, y = mgCpergSoilP, color = AP)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm", se = FALSE, color = "black") +  # Single black line for the overall relationship
+  labs(x = "Soil Health Index",
+       y = expression("mg POC g"^-1~"soil")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Lighter brown and dark green
+                               name = NULL) +  # Remove legend title
+  theme_minimal()
+
+# Display the plot
+POC_health
+
+# Create a plot with the regression line
+MAOC_health <- ggplot(data_clean, aes(x = overall.score, y = mgCpergSoilM, color = AP)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm", se = FALSE, color = "black") +  # Single black line for the overall relationship
+  labs(x = "Soil Health Index",
+       y = expression("mg MAOC g"^-1~"soil")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Lighter brown and dark green
+                     name = NULL) +  # Remove legend title
+  theme_minimal()
+
+# Display the plot
+MAOC_health
+
+# Create a plot with the regression line
+PropMAOC_health <- ggplot(data_clean, aes(x = overall.score, y = propM, color = AP)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm", se = FALSE, color = "black") +  # Single black line for the overall relationship
+  labs(x = "Soil Health Index",
+       y = expression("Proportion of Carbon as MAOC")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Lighter brown and dark green
+                     name = NULL) +  # Remove legend title
+  theme_minimal()
+
+# Display the plot
+PropMAOC_health
+
+# Arrange the plots side by side with shared legend
+Figure_7ehealth <- ggarrange(POC_health, MAOC_health, PropMAOC_health,
+                             ncol = 3, nrow = 1,  # Arrange in 1 row and 3 columns
+                             labels = c("a", "b", "c"),  # Labels for each plot
+                             label.x = c(0.02, 0.02, 0.02),  # Position labels on the left
+                             label.y = c(1.05, 1.05, 1.05),  # Position labels above the plots
+                             common.legend = TRUE,  # Share a legend
+                             legend = "top")  # Position legend at the top
+
+# Adjust the legend text size
+Figure_7ehealth <- Figure_7ehealth + 
+  theme(legend.text = element_text(size = 18),  # Increase legend text size
+          theme(legend.key.size = unit(1.8, "cm"))  # Increase legend key size for better visibility
+
+# Save the combined figure
+ggsave("Figure_7ehealth.jpeg", width = 15, height = 8)
+
+
+# Figure 7 Final to Line 400
+# Create a plot with the regression line
+POC_health <- ggplot(data_clean, aes(x = overall.score, y = mgCpergSoilP, color = AP)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm", se = TRUE, color = "black", fill = "gray", alpha = 0.2) +  # Add shaded confidence interval
+  labs(x = "Soil Health Index",
+       y = expression("mg POC g"^-1~"soil")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Custom colors for AP categories
+                     name = NULL) +  # Remove legend title
+  theme_minimal() +  # Minimal theme to remove gray background
+  theme(axis.title.x = element_text(size = 12),  # Increase x-axis label size
+        axis.title.y = element_text(size = 12),  # Increase y-axis label size
+        legend.text = element_text(size = 12))   # Increase legend text size
+
+# Display the plot
+POC_health
+
+
+# Replace 'pere' with 'perennial' in the AP column
+data_clean$AP[data_clean$AP == "pere"] <- "perennial"
+view(data_clean)
+
+MAOC_health <- ggplot(data_clean, aes(x = overall.score, y = mgCpergSoilM, color = AP)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm", se = TRUE, color = "black", fill = "gray", alpha = 0.2) +  # Add shaded confidence interval
+  labs(x = "Soil Health Index",
+       y = expression("mg MAOC g"^-1~"soil")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Custom colors for AP categories
+                     name = NULL) +  # Remove legend title
+  theme_minimal() +  # Minimal theme to remove gray background
+  theme(axis.title.x = element_text(size = 14),  # Increase x-axis label size
+        axis.title.y = element_text(size = 14),  # Increase y-axis label size
+        legend.text = element_text(size = 14))   # Increase legend text size
+
+# Display the plot
+MAOC_health
+
+# Create a plot with the regression line for Proportion of Carbon as MAOC
+PropMAOC_health <- ggplot(data_clean, aes(x = overall.score, y = propM, color = AP)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm", se = TRUE, color = "black", fill = "gray", alpha = 0.2) +  # Add shaded confidence interval
+  labs(x = "Soil Health Index",
+       y = expression("Proportion of Carbon as MAOC")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Lighter brown and dark green
+                     name = NULL) +  # Remove legend title
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 14),  # Increase x-axis label size
+        axis.title.y = element_text(size = 14),  # Increase y-axis label size
+        legend.text = element_text(size = 14))   # Increase legend text size
+
+# Display the plot
+PropMAOC_health
+
+library(ggpubr)
+
+# Arrange the plots side by side with shared legend
+Figure_7dhealth <- ggarrange(POC_health, MAOC_health, PropMAOC_health,
+                             ncol = 3, nrow = 1,  # Arrange in 1 row and 3 columns
+                             labels = c("a", "b", "c"),  # Labels for each plot
+                             label.x = c(0.02, 0.02, 0.02),  # Position labels on the left
+                             label.y = c(1.05, 1.05, 1.05),  # Position labels above the plots
+                             common.legend = TRUE,  # Share a legend
+                             legend = "top")  # Position legend at the top
+Figure_7dhealth
+
+library(cowplot)  # For plot_grid
+
+
+
+# This is the Final Final Actual Figure 4
+POC_health_no_legend <- POC_health + 
+  theme(legend.position = "none",  # Remove the legend for POC_health
+        axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank())
+
+MAOC_health_no_legend <- MAOC_health + 
+  theme(legend.position = "none",  # Remove the legend for MAOC_health
+        axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank())
+
+PropMAOC_health_no_legend <- PropMAOC_health + 
+  theme(legend.position = "none",  # Remove the legend for PropMAOC_health
+        axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank())
+
+library(ggplot2)
+library(cowplot)
+# Create the plots without legends (remove individual legends)
+POC_health_no_legend <- POC_health + 
+  theme(legend.position = "none",  # Remove the legend for POC_health
+        axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank())
+
+MAOC_health_no_legend <- MAOC_health + 
+  theme(legend.position = "none",  # Remove the legend for MAOC_health
+        axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank())
+
+PropMAOC_health_no_legend <- PropMAOC_health + 
+  theme(legend.position = "none",  # Remove the legend for PropMAOC_health
+        axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank())
+
+# Arrange the plots in 1 column, 3 rows, with shared x-axis
+Figure_7dhealth <- plot_grid(
+  POC_health_no_legend,  # No legend for this plot
+  MAOC_health_no_legend,  # No legend for this plot
+  PropMAOC_health_no_legend,  # No legend for this plot
+  ncol = 1,  # 1 column of plots
+  nrow = 3,  # 3 rows
+  align = 'v',  # Align vertically
+  labels = c("a", "b", "c"),  # Label the plots as "a", "b", and "c"
+  label_x = 0.05,   # Adjust x position for labels
+  label_y = 1.08    # Adjust y position for labels
+)
+
+# Extract the legend from one of the plots (e.g., POC_health)
+legend <- get_legend(
+  POC_health + 
+    guides(color = guide_legend(title = "Crop"))  # Add the legend title "Crop"
+)
+
+# Position the legend at the top-right of the figure
+Figure_7dhealth_with_legend <- plot_grid(
+  Figure_7dhealth,  # The grid with 3 plots
+  legend,           # The shared legend
+  ncol = 2,         # 2 columns: 1 for the plots and 1 for the legend
+  rel_widths = c(1, 0.2)  # Adjust the relative widths to give more space for the plots
+)
+
+# Move the legend to the top right
+Figure_7dhealth_final <- Figure_7dhealth_with_legend + 
+  theme(legend.position = c(0.9, 0.95),  # Move the legend to the top right
+        legend.justification = c("right", "top"),  # Align the legend to the top right
+        legend.title = element_text(size = 12),  # Adjust legend title size
+        legend.text = element_text(size = 10),   # Adjust legend text size
+        legend.title.align = 1)  # Align the legend title with the text (right-aligned)
+
+# Add a common x-axis label at the bottom (for all plots)
+Figure_7dhealth_final <- Figure_7dhealth_final + 
+  theme(axis.title.x = element_text(size = 14), 
+        axis.text.x = element_text(size = 12), 
+        axis.ticks.x = element_line(color = "black")) + 
+  annotation_custom(grob = grid::textGrob("Soil Health Index", gp = grid::gpar(fontsize = 14)), 
+                    ymin = -Inf, ymax = -Inf, xmin = -Inf, xmax = Inf)
+
+# Display the final figure
+Figure_7dhealth_final
+
+# Save the arranged figure
+Figure_7dhealth_final <- Figure_7dhealth_final + 
+  theme(plot.margin = margin(10, 10, 10, 10))  # Increase margins (top, right, bottom, left)
+
+ggsave("Figure_7dhealth.jpeg", plot = Figure_7dhealth_final, width = 20, height = 22, units = "cm", dpi = 300)
+
+
+###########################################################Figure 4 Final
+# Create the plots without legends (remove individual legends) but keep axis numbers
+POC_health_no_legend <- POC_health + 
+  theme(legend.position = "none",  # Remove the legend for POC_health
+        axis.title.x = element_blank(), axis.ticks.x = element_blank(),
+        axis.text.x = element_text(size = 12),  # Bring back the x-axis numbers
+        axis.text.y = element_text(size = 12))  # Bring back the y-axis numbers
+
+MAOC_health_no_legend <- MAOC_health + 
+  theme(legend.position = "none",  # Remove the legend for MAOC_health
+        axis.title.x = element_blank(), axis.ticks.x = element_blank(),
+        axis.text.x = element_text(size = 12),  # Bring back the x-axis numbers
+        axis.text.y = element_text(size = 12))  # Bring back the y-axis numbers
+
+PropMAOC_health_no_legend <- PropMAOC_health + 
+  theme(legend.position = "none",  # Remove the legend for PropMAOC_health
+        axis.title.x = element_blank(), axis.ticks.x = element_blank(),
+        axis.text.x = element_text(size = 12),  # Bring back the x-axis numbers
+        axis.text.y = element_text(size = 12))  # Bring back the y-axis numbers
+
+# Arrange the plots in 1 column, 3 rows, with shared x-axis
+Figure_7dhealth <- plot_grid(
+  POC_health_no_legend,  # No legend for this plot
+  MAOC_health_no_legend,  # No legend for this plot
+  PropMAOC_health_no_legend,  # No legend for this plot
+  ncol = 1,  # 1 column of plots
+  nrow = 3,  # 3 rows
+  align = 'v',  # Align vertically
+  labels = c("a", "b", "c"),  # Label the plots as "a", "b", and "c"
+  label_x = 0.05,   # Adjust x position for labels
+  label_y = 1.08    # Adjust y position for labels
+)
+
+# Extract the legend from one of the plots (e.g., POC_health)
+legend <- get_legend(
+  POC_health + 
+    guides(color = guide_legend(title = "Crop"))  # Add the legend title "Crop"
+)
+
+# Position the legend at the top-right of the figure
+Figure_7dhealth_with_legend <- plot_grid(
+  Figure_7dhealth,  # The grid with 3 plots
+  legend,           # The shared legend
+  ncol = 2,         # 2 columns: 1 for the plots and 1 for the legend
+  rel_widths = c(1, 0.2)  # Adjust the relative widths to give more space for the plots
+)
+
+# Move the legend to the top right
+Figure_7dhealth_edit <- Figure_7dhealth_with_legend + 
+  theme(legend.position = c(0.9, 0.95),  # Move the legend to the top right
+        legend.justification = c("right", "top"),  # Align the legend to the top right
+        legend.title = element_text(size = 12),  # Adjust legend title size
+        legend.text = element_text(size = 10),   # Adjust legend text size
+        legend.title.align = 1)  # Align the legend title with the text (right-aligned)
+
+# Add a common x-axis label at the bottom (for all plots)
+Figure_7dhealth_edit <- Figure_7dhealth_edit + 
+  theme(axis.title.x = element_text(size = 14), 
+        axis.text.x = element_text(size = 12), 
+        axis.ticks.x = element_line(color = "black")) + 
+  annotation_custom(grob = grid::textGrob("Soil Health Index", gp = grid::gpar(fontsize = 14)), 
+                    ymin = -Inf, ymax = -Inf, xmin = -Inf, xmax = Inf)
+Figure_7dhealth_edit <- Figure_7dhealth_edit + 
+  theme(
+    plot.margin = margin(t = 20, r = 20, b = 20, l = 20)  # Increase margins
+  )
+
+# Display the final figure
+Figure_7dhealth_edit
+ggsave("Figure_7dhealth_edit.jpeg", plot = Figure_7dhealth_edit, width = 20, height = 22, units = "cm", dpi = 300)
+
+########################################################### Figure4abc Corrected
+# Create the plots without legends but keep axis numbers for y-axis
+POC_health_no_legend <- POC_health + 
+  theme(legend.position = "none",  # Remove the legend for POC_health
+        axis.title.x = element_blank(), axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),  # Remove x-axis numbers from this plot
+        axis.text.y = element_text(size = 12))  # Keep y-axis numbers
+
+MAOC_health_no_legend <- MAOC_health + 
+  theme(legend.position = "none",  # Remove the legend for MAOC_health
+        axis.title.x = element_blank(), axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),  # Remove x-axis numbers from this plot
+        axis.text.y = element_text(size = 12))  # Keep y-axis numbers
+
+PropMAOC_health_no_legend <- PropMAOC_health + 
+  theme(legend.position = "none",  # Remove the legend for PropMAOC_health
+        axis.title.x = element_blank(), axis.ticks.x = element_blank(),
+        axis.text.x = element_text(size = 12),  # Keep x-axis numbers on the bottom plot
+        axis.text.y = element_text(size = 12))  # Keep y-axis numbers
+
+# Arrange the plots in 1 column, 3 rows, with shared x-axis
+Figure_7dhealth <- plot_grid(
+  POC_health_no_legend,  # No legend for this plot
+  MAOC_health_no_legend,  # No legend for this plot
+  PropMAOC_health_no_legend,  # No legend for this plot
+  ncol = 1,  # 1 column of plots
+  nrow = 3,  # 3 rows
+  align = 'v',  # Align vertically
+  labels = c("a", "b", "c"),  # Label the plots as "a", "b", and "c"
+  label_x = 0.05,   # Adjust x position for labels
+  label_y = c(1.08, 0.95, 1.1)    # Adjust y positions for labels (move 'b' down and 'c' up)
+)
+
+# Now, let's create a common x-axis label below the shared x-axis for all plots
+Figure_7dhealth_edit <- Figure_7dhealth + 
+  theme(
+    axis.title.x = element_text(size = 14, vjust = -40),  # Move the x-axis title further down below the labels
+    axis.text.x = element_text(size = 12),  # Keep the x-axis numbers
+    axis.ticks.x = element_line(color = "black"),  # Keep the x-axis ticks
+    plot.margin = margin(t = 20, r = 20, b = 60, l = 20)  # Increase bottom margin for the x-axis title
+  ) + 
+   annotation_custom(grob = grid::textGrob("Soil Health Index", gp = grid::gpar(fontsize = 14)), 
+                    ymin = -Inf, ymax = -Inf, xmin = -Inf, xmax = Inf)  # Add the x-axis title below the plots
+
+# To ensure that the x-axis labels only appear once (on the bottom plot), 
+# we need to remove the x-axis labels from the first two rows manually
+Figure_7dhealth_edit <- Figure_7dhealth_edit + 
+  theme(
+    axis.text.x = element_blank()  # Remove x-axis labels from the first two rows
+  ) 
+
+# Display the final figure
+Figure_7dhealth_edit
+
+# Save the figure as 'figure4abc.jpeg'
+ggsave("figure4abc.jpeg", plot = Figure_7dhealth_edit, width = 20, height = 22, units = "cm", dpi = 300)
+
+###################################################################
+# Ensure no x-axis labels on individual plots (POC_health_no_legend, MAOC_health_no_legend, PropMAOC_health_no_legend)
+POC_health_no_legend <- POC_health + 
+  theme(legend.position = "none",  # Remove the legend for POC_health
+        axis.title.x = element_blank(), axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),  # Remove x-axis numbers from this plot
+        axis.text.y = element_text(size = 12))  # Keep y-axis numbers
+
+MAOC_health_no_legend <- MAOC_health + 
+  theme(axis.title.x = element_blank(), axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),  # Remove x-axis numbers from this plot
+        axis.text.y = element_text(size = 12))  # Keep y-axis numbers
+
+PropMAOC_health_no_legend <- PropMAOC_health + 
+  theme(legend.position = "none",  # Remove the legend for PropMAOC_health
+        axis.title.x = element_blank(), axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),  # Remove x-axis numbers from this plot
+        axis.text.y = element_text(size = 12))  # Keep y-axis numbers
+
+# Arrange the plots in 1 column, 3 rows, with shared x-axis
+Figure_7dhealth <- plot_grid(POC_health_no_legend,  # No legend for this plot
+  MAOC_health_no_legend,  # No legend for this plot
+  PropMAOC_health_no_legend,  # No legend for this plot
+  ncol = 1,  # 1 column of plots
+  nrow = 3,  # 3 rows
+  align = 'v',  # Align vertically
+  labels = c("a", "b", "c"),  # Label the plots as "a", "b", and "c"
+  label_x = 0.05,   # Adjust x position for labels
+  label_y = 1.08    # Adjust y position for labels
+)
+
+# Adjust the x-axis title to be positioned below the x-axis numbers
+Figure_7dhealth_edit <- Figure_7dhealth + 
+  theme(axis.title.x = element_text(size = 14, margin = margin(t = 40)),  # Increase top margin for the x-axis title
+        axis.text.x = element_text(size = 12), 
+        axis.ticks.x = element_line(color = "black")) +
+  annotation_custom(grob = grid::textGrob("Soil Health Index", gp = grid::gpar(fontsize = 14)), 
+                    ymin = -Inf, ymax = -Inf, xmin = -Inf, xmax = Inf)  # Place the x-axis label below
+
+# Adjust the margins of the plot to provide space for the x-axis title
+Figure_7dhealth_edit <- Figure_7dhealth_edit + 
+  theme(
+    plot.margin = margin(t = 30, r = 20, b = 60, l = 20)  # Increase bottom margin to give space for the title
+  )
+
+# Remove the first x-axis label (e.g., 0.00) using scale_x_continuous()
+Figure_7dhealth_edit <- Figure_7dhealth_edit + 
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 5), labels = function(x) ifelse(x == 0, NA, x))  # Remove 0.00
+scale_color_manual(values = c("#cd853f", "darkgreen"),  # Custom colors for AP categories
+                   name = NULL) +  # Remove legend title
+# Rename the entire figure
+figure4abc <- Figure_7dhealth_edit
+
+# Display the final figure
+figure4abc
+
+# Save the figure as 'figure4abc.jpeg'
+ggsave("figure4abc.jpeg", plot = figure4abc, width = 20, height = 22, units = "cm", dpi = 300)
+
+
+
+
+
+
+
+# Adjust the legend text size
+Figure_7dhealth <- Figure_7dhealth + 
+  theme(legend.text = element_text(size = 16),  # Increase legend text size
+        legend.title = element_text(size = 18),  # Increase legend title size
+        legend.key.size = unit(1.8, "cm"))  # Increase legend key size for better visibility
+
+# Save the combined figure
+ggsave("Figure_7dhealth.jpeg", width = 15, height = 8)
+
+view (data_clean)
+
+# Fit the linear model
+lm_model <- lm(mean_mgCpergSoilP ~ overall.score, data = data_summary)
+
+# Get predictions along with confidence intervals
+predictions <- predict(lm_model, newdata = data_summary, interval = "confidence", level = 0.95)
+
+# Combine predictions with data_summary
+predictions_df <- as.data.frame(predictions)
+data_summary <- cbind(data_summary, predictions_df)
+colnames(data_summary)[3:5] <- c("fit", "lwr", "upr")  # Rename columns for clarity
+
+# Create unique column names if needed
+names(data_summary) <- make.unique(names(data_summary))
+
+# Now create the plot with error bands
+POC_health <- ggplot(data_summary, aes(x = overall.score, y = mean_mgCpergSoilP, color = AP)) +
+  geom_point(alpha = 0.5) +
+  geom_errorbar(aes(ymin = mean_mgCpergSoilP - se_mgCpergSoilP, ymax = mean_mgCpergSoilP + se_mgCpergSoilP), width = 0.2) +  # Error bars for means
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, fill = "black") +  # Error bands around regression line
+  geom_line(aes(y = fit), color = "black") +  # Regression line
+  labs(x = "Soil Health Index",
+       y = expression("mg POC g"^-1~"soil")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Replace color1 and color2 with your desired colors
+                     name = NULL) +  # Remove legend title
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 16),  # Increase x-axis label size
+        axis.title.y = element_text(size = 16),  # Increase y-axis label size
+        legend.text = element_text(size = 14))   # Increase legend text size
+
+# Display the plot
+POC_health
+
+
+# Calculate mean and standard error for mgCpergSoilP grouped by overall.score
+data_summary <- data_clean %>%
+  group_by(overall.score, AP) %>%
+  summarise(
+    mean_mgCpergSoilP = mean(mgCpergSoilP, na.rm = TRUE),  # Calculate mean for each overall.score
+    n = n(),  # Count total number of observations for each overall.score
+    se_mgCpergSoilP = ifelse(n > 1, sd(mgCpergSoilP, na.rm = TRUE) / sqrt(n), NA),  # Calculate SE
+    .groups = 'drop'  # Avoid warnings about grouped data
+  )
+
+# View the summary to check for calculated values
+print(data_summary)
+
+# Create a plot with the regression line and error bars for POC
+POC_health <- ggplot(data_summary, aes(x = overall.score, y = mean_mgCpergSoilP)) +
+  geom_point(data = data_clean, aes(x = overall.score, y = mgCpergSoilP, color = AP), alpha = 0.5) +  # Scatter plot of original data
+  geom_errorbar(aes(ymin = mean_mgCpergSoilP - se_mgCpergSoilP, 
+                    ymax = mean_mgCpergSoilP + se_mgCpergSoilP), 
+                width = 0.2) +  # Use data_summary for error bars
+  stat_smooth(method = "lm", se = FALSE, color = "black") +  # Regression line
+  labs(x = "Soil Health Index",
+       y = expression("mg POC g"^-1~"soil")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Use your desired colors
+                     name = NULL) +  # Remove legend title
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 16),  # Increase x-axis label size
+        axis.title.y = element_text(size = 16),  # Increase y-axis label size
+        legend.text = element_text(size = 14))   # Increase legend text size
+
+# Display the plot
+POC_health
+
+
+
+
+# Calculate means and standard errors for error bars
+data_summary <- data_clean %>%
+  group_by(overall.score, AP) %>%
+  summarise(
+    mean_mgCpergSoilP = mean(mgCpergSoilP, na.rm = TRUE),
+    se_mgCpergSoilP = sd(mgCpergSoilP, na.rm = TRUE) / sqrt(n()),
+    mean_mgCpergSoilM = mean(mgCpergSoilM, na.rm = TRUE),
+    se_mgCpergSoilM = sd(mgCpergSoilM, na.rm = TRUE) / sqrt(n()),
+    mean_propM = mean(propM, na.rm = TRUE),
+    se_propM = sd(propM, na.rm = TRUE) / sqrt(n())
+  )
+
+# Create a plot with the regression line and error bars for POC
+POC_health <- ggplot(data_summary, aes(x = overall.score, y = mean_mgCpergSoilP, color = AP)) +
+  geom_point(alpha = 0.5) +
+  geom_errorbar(aes(ymin = mean_mgCpergSoilP - se_mgCpergSoilP, ymax = mean_mgCpergSoilP + se_mgCpergSoilP), width = 0.2) +  # Error bars
+  stat_smooth(method = "lm", se = FALSE, color = "black") +  # Single black line for the overall relationship
+  labs(x = "Soil Health Index",
+       y = expression("mg POC g"^-1~"soil")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Replace color1 and color2 with your desired colors
+                     name = NULL) +  # Remove legend title
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 16),  # Increase x-axis label size
+        axis.title.y = element_text(size = 16),  # Increase y-axis label size
+        legend.text = element_text(size = 14))   # Increase legend text size
+
+# Display the plot
+POC_health
+
+# Replace 'pere' with 'perennial' in the AP column
+data_clean$AP[data_clean$AP == "pere"] <- "perennial"
+
+# Create a plot with the regression line and error bars for MAOC
+MAOC_health <- ggplot(data_summary, aes(x = overall.score, y = mean_mgCpergSoilM, color = AP)) +
+  geom_point(alpha = 0.5) +
+  geom_errorbar(aes(ymin = mean_mgCpergSoilM - se_mgCpergSoilM, ymax = mean_mgCpergSoilM + se_mgCpergSoilM), width = 0.2) +  # Error bars
+  stat_smooth(method = "lm", se = FALSE, color = "black") +  # Single black line for the overall relationship
+  labs(x = "Soil Health Index",
+       y = expression("mg MAOC g"^-1~"soil")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Lighter brown and dark green
+                     name = NULL) +  # Remove legend title
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 16),  # Increase x-axis label size
+        axis.title.y = element_text(size = 16),  # Increase y-axis label size
+        legend.text = element_text(size = 14))   # Increase legend text size
+
+# Display the plot
+MAOC_health
+
+# Create a plot with the regression line and error bars for Proportion of Carbon as MAOC
+PropMAOC_health <- ggplot(data_summary, aes(x = overall.score, y = mean_propM, color = AP)) +
+  geom_point(alpha = 0.5) +
+  geom_errorbar(aes(ymin = mean_propM - se_propM, ymax = mean_propM + se_propM), width = 0.2) +  # Error bars
+  stat_smooth(method = "lm", se = FALSE, color = "black") +  # Single black line for the overall relationship
+  labs(x = "Soil Health Index",
+       y = expression("Proportion of Carbon as MAOC")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Lighter brown and dark green
+                     name = NULL) +  # Remove legend title
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 16),  # Increase x-axis label size
+        axis.title.y = element_text(size = 16),  # Increase y-axis label size
+        legend.text = element_text(size = 14))   # Increase legend text size
+
+# Display the plot
+PropMAOC_health
+
+# Arrange the plots side by side with shared legend
+Figure_7dhealth <- ggarrange(POC_health, MAOC_health, PropMAOC_health,
+                             ncol = 3, nrow = 1,  # Arrange in 1 row and 3 columns
+                             labels = c("a", "b", "c"),  # Labels for each plot
+                             label.x = c(0.02, 0.02, 0.02),  # Position labels on the left
+                             label.y = c(1.05, 1.05, 1.05),  # Position labels above the plots
+                             common.legend = TRUE,  # Share a legend
+                             legend = "top")  # Position legend at the top
+
+# Adjust the legend text size
+Figure_7dhealth <- Figure_7dhealth + 
+  theme(legend.text = element_text(size = 16),  # Increase legend text size
+        legend.title = element_text(size = 18),  # Increase legend title size
+        legend.key.size = unit(1.5, "cm"))  # Increase legend key size for better visibility
+
+# Save the combined figure
+ggsave("Figure_7dhealth.jpeg", width = 15, height = 8)
+# Arrange the plots side by side with shared legend
+Figure_7ehealth <- ggarrange(POC_health, MAOC_health, PropMAOC_health,
+                             ncol = 3, nrow = 1,  # Arrange in 1 row and 3 columns
+
+
+
+
+
+
+
+
+
+
+
+# Create a plot with the regression line
+POC_health <- ggplot(data_clean, aes(x = overall.score, y = mgCpergSoilP, color = AP)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm", se = FALSE, color = "black") +  # Single black line for the overall relationship
+  labs(x = "Soil Health Index",
+       y = expression("mg POC g"^-1~"soil")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Lighter brown and dark green
+                     name = NULL) +  # Remove legend title
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 16),  # Increase x-axis label size
+        axis.title.y = element_text(size = 16))  # Increase y-axis label size
+
+# Display the plot
+POC_health
+
+# Replace 'pere' with 'perennial' in the AP column
+data_clean$AP[data_clean$AP == "pere"] <- "perennial"
+view(data_clean)
+
+# Create a plot with the regression line for MAOC
+MAOC_health <- ggplot(data_clean, aes(x = overall.score, y = mgCpergSoilM, color = AP)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm", se = FALSE, color = "black") +  # Single black line for the overall relationship
+  labs(x = "Soil Health Index",
+       y = expression("mg MAOC g"^-1~"soil")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Lighter brown and dark green
+                     name = NULL) +  # Remove legend title
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 16),  # Increase x-axis label size
+        axis.title.y = element_text(size = 16))  # Increase y-axis label size
+
+# Display the plot
+MAOC_health
+
+# Create a plot with the regression line for PropMAOC
+PropMAOC_health <- ggplot(data_clean, aes(x = overall.score, y = propM, color = AP)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm", se = FALSE, color = "black") +  # Single black line for the overall relationship
+  labs(x = "Soil Health Index",
+       y = expression("Proportion of Carbon as MAOC")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Lighter brown and dark green
+                     name = NULL) +  # Remove legend title
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 16),  # Increase x-axis label size
+        axis.title.y = element_text(size = 16))  # Increase y-axis label size
+
+# Display the plot
+PropMAOC_health
+
+
+
+## Calculate overall mean and standard error for propM
+data_summary <- data_clean %>%
+  summarise(
+    mean_propM = mean(propM, na.rm = TRUE),  # Calculate overall mean
+    n = n(),  # Count total number of observations
+    se_propM = ifelse(n > 1, sd(propM, na.rm = TRUE) / sqrt(n), NA)  # Calculate SE
+  )
+
+# View the summary to check for calculated values
+print(data_summary)
+
+# Calculate overall mean and standard error for propM
+data_summary <- data_clean %>%
+  summarise(
+    mean_propM = mean(propM, na.rm = TRUE),  # Calculate overall mean
+    n = n(),  # Count total number of observations
+    se_propM = ifelse(n > 1, sd(propM, na.rm = TRUE) / sqrt(n), NA)  # Calculate SE
+  )
+
+# Calculate overall mean and standard error for y_variable
+overall_mean <- mean(data_clean$mgCpergSoilP, na.rm = TRUE)
+overall_se <- sd(data_clean$mgCpergSoilP, na.rm = TRUE) / sqrt(nrow(data_clean))
+
+# Create a plot with a single point and error bars
+ggplot(data_clean, aes(x = overall.score, y = mgCpergSoilP)) +
+  geom_point(alpha = 0.5) +  # Original data points
+  geom_errorbar(aes(ymin = overall_mean - overall_se, ymax = overall_mean + overall_se), 
+                width = 0.2) +  # Error bars at the overall mean
+  labs(x = "Soil Health Index", y = "Y Variable") +
+  theme_minimal()
+
+
+# Get a representative x value (e.g., the mean overall.score)
+mean_x_value <- mean(data_clean$overall.score, na.rm = TRUE)
+
+# Create a plot with the regression line for PropMAOC with error bars
+PropMAOC_health <- ggplot(data_clean, aes(x = overall.score, y = propM, color = AP)) +
+  geom_point(alpha = 0.5) +  # Original data points
+  geom_errorbar(data = data_summary, 
+                aes(x = mean_x_value, ymin = mean_propM - se_propM, ymax = mean_propM + se_propM), 
+                width = 0.2) +  # Error bars at the mean x value
+  stat_smooth(method = "lm", se = FALSE, color = "black") +  # Single black line for the overall relationship
+  labs(x = "Soil Health Index",
+       y = expression("Proportion of Carbon as MAOC")) +
+  scale_color_manual(values = c("#cd853f", "darkgreen"),  # Lighter brown and dark green
+                     name = NULL) +  # Remove legend title
+  theme_minimal() +
+  theme(axis.title.x = element_text(size = 16),  # Increase x-axis label size
+        axis.title.y = element_text(size = 16))  # Increase y-axis label size
+
+# Display the plot
+PropMAOC_health
+
+
+
+library(ggpubr)
+
+# Arrange the plots side by side with shared legend
+Figure_7ehealth <- ggarrange(POC_health, MAOC_health, PropMAOC_health,
+                             ncol = 3, nrow = 1,  # Arrange in 1 row and 3 columns
+                             
+                             
+
+
+                             Figure_7ehealth
+
+
+
+                             
+                        
+                             # Fit linear models for each response variable
+                             model_POC <- lm(mgCpergSoilP ~ overall.score, data = data_clean)
+                             model_MAOC <- lm(mgCpergSoilM ~ overall.score, data = data_clean)
+                             model_PropMAOC <- lm(propM ~ overall.score, data = data_clean)
+                             
+                             # Summarize the models to extract coefficients and significance
+                             summary_POC <- summary(model_POC)
+                             summary_MAOC <- summary(model_MAOC)
+                             summary_PropMAOC <- summary(model_PropMAOC)
+                             
+                             # Extract slopes (coefficients) and p-values for overall.score
+                             slope_POC <- summary_POC$coefficients["overall.score", "Estimate"]
+                             p_value_POC <- summary_POC$coefficients["overall.score", "Pr(>|t|)"]
+                             
+                             slope_MAOC <- summary_MAOC$coefficients["overall.score", "Estimate"]
+                             p_value_MAOC <- summary_MAOC$coefficients["overall.score", "Pr(>|t|)"]
+                             
+                             slope_PropMAOC <- summary_PropMAOC$coefficients["overall.score", "Estimate"]
+                             p_value_PropMAOC <- summary_PropMAOC$coefficients["overall.score", "Pr(>|t|)"]
+                             
+                             # Print slopes and p-values
+                             cat("Slope and p-value for mgCpergSoilP:\n")
+                             cat("Slope:", slope_POC, "P-value:", p_value_POC, "\n")
+                             
+                             cat("Slope and p-value for mgCpergSoilM:\n")
+                             cat("Slope:", slope_MAOC, "P-value:", p_value_MAOC, "\n")
+                             
+                             cat("Slope and p-value for propM:\n")
+                             cat("Slope:", slope_PropMAOC, "P-value:", p_value_PropMAOC, "\n")                           
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+
+# Adjust the legend text size within each plot
+POC_health <- POC_health + 
+  theme(legend.text = element_text(size = 14),  # Increase legend item text size
+        legend.title = element_blank())  # Ensure no legend title
+
+MAOC_health <- MAOC_health + 
+  theme(legend.text = element_text(size = 14),  # Increase legend item text size
+        legend.title = element_blank())  # Ensure no legend title
+
+PropMAOC_health <- PropMAOC_health + 
+  theme(legend.text = element_text(size = 14),  # Increase legend item text size
+        legend.title = element_blank())  # Ensure no legend title
+
+# Arrange the plots side by side with shared legend
+Figure_7dhealth <- ggarrange(POC_health, MAOC_health, PropMAOC_health,
+                             ncol = 3, nrow = 1,  # Arrange in 1 row and 3 columns
+                             labels = c("a", "b", "c"),  # Labels for each plot
+                             label.x = c(0.02, 0.02, 0.02),  # Position labels on the left
+                             label.y = c(1.05, 1.05, 1.05),  # Position labels above the plots
+                             common.legend = TRUE,  # Share a legend
+                             legend = "top")  # Position legend at the top
+
+# Save the combined figure
+ggsave("Figure_7dhealth.jpeg", width = 15, height = 8)
+
+
+
+# Arrange the plots side by side with shared legend
+Figure_combined <- ggarrange(POC_health, MAOC_health, PropMAOC_health,
+                             ncol = 3, nrow = 1,  # Arrange in 1 row and 3 columns
+                             labels = c("a", "b", "c"),  # Labels for each plot
+                             label.x = c(0.1, 0.5, 0.9),  # Adjust x positions of labels
+                             label.y = c(1, 1, 1),  # Keep labels at the top
+                             common.legend = TRUE,  # Share a legend
+                             legend = "top")  # Position legend at the top
+
+# Adjust the legend position to overlap with the first plot
+Figure_7.health <- annotate_figure(Figure_combined,
+                                   top = text_grob("", vjust = 0.5),  # Add space for legend
+                                   bottom = text_grob("", vjust = 0.5))
+
+# Display the combined figure
+print(Figure_7.health)
+ggsave("Figure_7.health.jpeg", width = 15, height = 8)
 
 
 # Remove rows with NA values in the relevant columns
@@ -534,6 +1351,7 @@ ggplot(data=data, aes(x=active_carbon, y=mgCpergSoilP, col=tmeanC))+
 #Correlation plot
 cordata <- cor(data[,c("mgCpergSoilP","ph","ppt.cm","tmeanC","aggregate_stability","soil_texture_clay","active_carbon")], use="pairwise.complete.obs", method="pearson")
 corrplot(cordata)
+print(cordata)
 
 ##Linear Mixed Model for dependent variable (mgCpergSoilP)
 #test without random effect, because only one value per field
@@ -584,6 +1402,9 @@ m3P=gls(mgCpergSoilP~ppt.cm*tmeanC
         +aggregate_stability+active_carbon+ph,
         data=data, na.action=na.exclude, method="REML") 
 summary(m3P)
+
+n_obs_model <- nobs(m3P)
+print(n_obs_model) 
 ####predict(x= aggregate_stability) percent increase over the range of value obererved. 
 
 F_Final <- fitted(m3P)
@@ -636,7 +1457,7 @@ par(op)
 #Visualize significant relationships
 
 #own_theme below sets ggplot parameters for how plots should look. 
-own_theme <- theme_bw(base_size = 11) +
+own_theme <- theme_bw(base_size = 12) +
   theme(rect = element_blank(),
         axis.ticks = element_line(color = "black"),
         axis.text = element_text(color = "black"),
@@ -701,13 +1522,89 @@ data <- data %>%
    scale_color_manual(name = "Mean Annual Precipitation (cm)", values = c("red", "blue"))+
     theme_minimal()
   theme(
-    axis.title = element_text(size = 16),
-    axis.text = element_text(size = 14),
-    legend.title = element_text(size = 16),
-    legend.text = element_text(size = 14)
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 12),
+    axis.line = element_line(color = "black") 
   )
  mgPOM_tmeanppt
  ggsave("mgPOM_Figure4.jpeg", width = 10, height = 8)
+ 
+ #add axes line for Figure4a
+ #ppt and tmeanC, option 2, Figure 4 Final
+ summary(data$ppt.cm)
+ pred_tmeanppt <- ggpredict(m3P, terms = c("tmeanC","ppt.cm[101,110]"))
+ pred_tmeanppt$ppt_group <- pred_tmeanppt$group
+ levels(pred_tmeanppt$ppt_group) <- c("low (92-104)",  
+                                      "high (104-142)")
+ data <- data %>%
+   drop_na(ppt.cm) %>% 
+   dplyr::mutate(ppt_group = cut(ppt.cm, breaks = c(92,104,142)))
+ levels(data$ppt_group) <- c("low (92-104)",  
+                             "high (104-142)")
+ 
+ # Plot new Figure with axes labels
+ mgPOM_tmeanppt <- data %>% 
+   ggplot() +
+   geom_point(aes(x = tmeanC, y = mgCpergSoilP, col = ppt_group), # Plot your data
+              size = 1.5, alpha = 0.5) +
+   geom_line(pred_tmeanppt, mapping = aes(x = x, y = predicted, col = ppt_group), # Plot the model's prediction
+             lwd = 1) +
+   own_theme +  # Apply your custom theme
+   scale_y_continuous(expression("mg POC g"^-1 * "soil")) +
+   scale_x_continuous(expression("Mean Annual Temperature(°C)"),
+                      label = scales::comma) +
+   scale_color_manual(name = "Mean Annual Precipitation (cm)", values = c("red", "blue")) +
+   theme_minimal() +  # Use minimal theme
+   theme(
+     axis.title = element_text(size = 14),      # Font size for axis labels
+     axis.text = element_text(size = 12),       # Font size for axis text
+     legend.title = element_text(size = 14),    # Font size for legend title
+     legend.text = element_text(size = 12),     # Font size for legend text
+     axis.line = element_line(color = "black")  # Add black axis lines
+   )
+ 
+ # Show the plot
+ mgPOM_tmeanppt
+ 
+ 
+ # ppt and tmeanC, option 2, Figure 4 Final
+ summary(data$ppt.cm)
+ pred_tmeanppt <- ggpredict(m3P, terms = c("tmeanC", "ppt.cm[101,110]"))
+ pred_tmeanppt$ppt_group <- pred_tmeanppt$group
+ levels(pred_tmeanppt$ppt_group) <- c("low (92-104)",  
+                                      "high (104-142)")
+ 
+ data <- data %>%
+   drop_na(ppt.cm) %>% 
+   dplyr::mutate(ppt_group = cut(ppt.cm, breaks = c(92,104,142)))
+ levels(data$ppt_group) <- c("low (92-104)",  
+                             "high (104-142)")
+ 
+ # Plot
+ mgPOM_tmeanppt <- data %>% 
+   ggplot() +
+   geom_point(aes(x = tmeanC, y = mgCpergSoilP, col = ppt_group), # Plot your data
+              size = 1.5, alpha = 0.5) +
+   geom_line(pred_tmeanppt, mapping = aes(x = x, y = predicted, col = ppt_group), # Plot the model's prediction
+             lwd = 1) +
+   own_theme +  # Apply your custom theme
+   scale_y_continuous(expression("mg POC g"^-1 * "soil")) +
+   scale_x_continuous(expression("Mean Annual Temperature(°C)"),
+                      label = scales::comma) +
+   scale_color_manual(name = "Mean Annual Precipitation (cm)", values = c("red", "blue")) +
+   theme_minimal() +  # Apply minimal theme
+   theme(
+     axis.title = element_text(size = 11),    # Font size for axis labels
+     axis.text = element_text(size = 11),     # Font size for axis tick labels
+     legend.title = element_text(size = 11),  # Font size for legend title
+     legend.text = element_text(size = 11),   # Font size for legend text
+     axis.line = element_line(color = "black")  # Add black axis lines
+   )
+ 
+ # Show the plot
+ mgPOM_tmeanppt
  
  
  #fix font
@@ -815,8 +1712,8 @@ summary(m3P)
  ggsave(" mgPOM_tmeanppt.jpeg", width = 10, height = 8)
 view(data)
 
-#for agg stability color by AP
-pred_aggregate_stability <- ggpredict(m3P, terms = c("aggregate_stability","AP"))
+#for agg stability color by AP()
+pred_aggregate_stability <- ggpredict(m3P, terms = c"aggregate_stability","AP"))
 mgPOM_aggregate_stability <-data %>% 
   ggplot() +
   geom_point(aes(x = aggregate_stability, y = mgCpergSoilP,color=AP),
@@ -870,18 +1767,7 @@ pred_df <- as.data.frame(pred_aggregate_stability)
 
 # Create the plot
 
-mgPOM_aggregate_stability <- data %>%
-  ggplot(aes(x = aggregate_stability, y = mgCpergSoilP)) +
-  geom_point(size = 1.5, alpha = 0.5) +
-  geom_line(data = pred_df, aes(x = x, y = predicted, color = "black"), lwd = 1) +  # Plot the model's prediction
-  own_theme +  # Ensure 'own_theme' is defined or remove it
-  theme(legend.position = "none") +
-   scale_y_continuous(
-    name = expression("mg POC " * g^{-1} * " soil")) +
-  scale_x_continuous(name = expression("Aggregate Stability (%)"),
-    labels = scales::comma) 
-  mgPOM_aggregate_stability
-  
+  View(data)
   mgPOM_aggregate_stability <- data %>%
     ggplot(aes(x = aggregate_stability, y = mgCpergSoilP)) +
     geom_point(size = 1.5, alpha = 0.5) +
@@ -952,7 +1838,7 @@ mgPOM_active_carbon <- data %>%
   ggplot(aes(x = active_carbon, y = mgCpergSoilP)) +
   geom_point(size = 1.5, alpha = 0.5) +
   geom_line(data = pred_df, aes(x = x, y = predicted), color = "black", lwd = 1) +  # Change color of the line
-  own_theme +  # Ensure 'own_theme' is defined or remove it
+  own_theme +  
   theme(legend.position = "none") +
   scale_y_continuous(
     name = expression("mg POC " * g^{-1} * " soil")
@@ -964,6 +1850,17 @@ mgPOM_active_carbon <- data %>%
 
 mgPOM_active_carbon
 ggarrange(mgPOM_aggregate_stability,mgPOM_active_carbon,nrow=1, common.legend=T, legend="left", labels=c("a","b"))
+
+# Arrange plots in a 2x2 layout without a legend
+Figure2Final<- ggarrange(mgPOM_aggregate_stability, mgPOM_active_carbon, 
+          mgMAOM_aggregate_stability, mgMAOM_active_carbon, 
+          nrow = 2, ncol = 2, 
+          labels = c("a", "b", "c", "d"), 
+          common.legend = FALSE)
+# Save the plot using ggsave
+ggsave("Figure2Final.jpeg", plot = Figure2Final, width = 10, height = 8, dpi = 300)
+
+
 
 #ppt on own
 pred_ppt <- ggpredict(m3P, terms = c("ppt.cm"))
@@ -1086,6 +1983,33 @@ summary(field_anova)
 
 TukeyHSD(field_anova)
 
+
+library(dplyr)
+
+# Remove rows where Type.x is "Wheat"
+data_filtered <- data %>% filter(Type.x != "Wheat")
+# Remove rows where Type.x is "Wheat"
+data_filtered <- filter(data, Type.x != "Field crops")
+
+View(data_filtered)
+# Run the ANOVA
+field_anova <- aov(mgCpergSoilP ~ Type.x, data = data_filtered)
+
+# Display the summary of the ANOVA
+summary(field_anova)
+# Run the ANOVA
+field_anova <- aov(mgCpergSoilM ~ Type.x, data = data_filtered)
+
+# Display the summary of the ANOVA
+summary(field_anova)
+
+# Run the ANOVA
+field_anovaProp <- aov(logitpropM ~ Type.x, data = data_filtered)
+
+# Display the summary of the ANOVA
+summary(field_anovaProp)
+
+
 # Calculate means by field type
 means_by_field_type <- data %>%
   group_by(Type.x) %>%
@@ -1095,6 +2019,7 @@ print(means_by_field_type)
 
 #anova by field type to see differences 
 field_anova<- aov(mgCpergSoilM~Type.x, data=data)
+
 summary(field_anova)  
 
 TukeyHSD(field_anova)
@@ -1122,8 +2047,8 @@ print(means_by_field_type)
 # Create the new column 'AP'
 data <- data %>%
   mutate(AP = case_when(
-    Type.x %in% c("Hay", "Pasture") ~ "pere",
-    Type.x %in% c("Corn", "Veg") ~ "annual",
+    Type.x %in% c("Hay", "Pasture") ~ "Perennial",
+    Type.x %in% c("Corn", "Veg") ~ "Annual",
     TRUE ~ NA_character_ # This handles any values not specified in the conditions
   ))
 
@@ -1138,8 +2063,6 @@ summary(AP_anova)
 TukeyHSD(AP_anova)
 
 # Calculate the means and standard errors
-library(dplyr)
-
 # Calculate means
 means <- data %>%
   group_by(AP) %>%
@@ -1264,23 +2187,6 @@ errors <- data %>%
 print(means)
 print(errors)
 
-# Calculate means
-means <- data %>%
-  group_by(Type.x) %>%
-  summarise(mean_logitpropM = mean(logitpropM, na.rm = TRUE))
-
-# Calculate standard errors
-errors <- data %>%
-  group_by(Type.x) %>%
-  summarise(
-    mean_logitPropM = mean(logitpropM, na.rm = TRUE),
-    se_PropM = sd(propM, na.rm = TRUE) / sqrt(n())
-  )
-
-# Print the results
-print(means)
-print(errors)
-
 
 #anova by soil texture class to see differences 
 texture_anova<- aov(mgCpergSoilP~soil_texture_class, data=data)
@@ -1389,11 +2295,126 @@ ggplot(data, aes(x = Type.x, fill = factor(till.passes))) +
 # Perform linear regression
 regression_modelPM <- lm(mgCpergSoilM ~ mgCpergSoilP, data = data)
 
+# Perform linear regression
+regression_modelMAOC <- lm(mgCpergSoilM ~ Type.x, data = data)
+anova(regression_modelMAOC)
 # Summarize the regression model
 summary(regression_modelPM)
 
+data
+regression_modelPOC <- lm(mgCpergSoilP ~ Type.x, data = data)
+anova(regression_modelPOC)
+#Figure 8 Final
+# Create the plot
+Figure8a <- ggplot(data, aes(x = mgCpergSoilP, y = mgCpergSoilM)) +
+  geom_point(size = 1.5,alpha = 0.5) +
+  stat_smooth(method = "lm", se = FALSE, color = "black", lwd = 1) +
+  own_theme +  
+  theme(legend.position = "none") +
+  labs(
+    x = expression(paste("mg POC ", g^{-1}, " soil")),
+    y = expression(paste("mg MAOC ", g^{-1}, " soil"))
+)
 
-Figure8<-ggplot(data, aes(x = mgCpergSoilP, y = mgCpergSoilM)) +
+Figure8a
+
+    labels = scales::comma
+  )
+
+Figure8a <- ggplot(data, aes(x = mgCpergSoilP, y = mgCpergSoilM)) +
+  geom_point(size = 1.5, alpha = 0.5, color="black") +
+  stat_smooth(method = "lm", se = FALSE, color = "black", lwd = 1) +
+  own_theme +  
+  theme(legend.position = "none",           # Remove legend
+        axis.title = element_text(size = 14),  # Axis title size
+        axis.text = element_text(size = 12),   # Axis text size
+        axis.line = element_line(color = "black"),  # Add axis lines
+        axis.ticks = element_line(color = "black")) + # Optional: Add ticks
+  labs(
+    x = expression(paste("mg POC ", g^{-1}, " soil")),  # X-axis label
+    y = expression(paste("mg MAOC ", g^{-1}, " soil")) # Y-axis label
+  )
+
+Figure8a
+
+##This is Figure 5 Final 
+Figure8d <- ggplot(data, aes(x = mgCpergSoilP, y = mgCpergSoilM)) +
+  geom_point(size = 1.5, alpha = 0.5, color = "black") +  # Explicitly set all points to black
+  stat_smooth(method = "lm", se = FALSE, color = "black", lwd = 1) +  # Keep the line black
+  own_theme +  
+  theme(legend.position = "none",           # Remove legend
+        axis.title = element_text(size = 14),  # Axis title size
+        axis.text = element_text(size = 12),   # Axis text size
+        axis.line = element_line(color = "black"),  # Add axis lines
+        axis.ticks = element_line(color = "black"),  # Optional: Add ticks
+        panel.grid = element_blank(),  # Remove grid lines to make things cleaner
+        strip.background = element_blank()) +  # Remove facet strip background if it's present
+  labs(
+    x = expression(paste("mg POC ", g^{-1}, " soil")),  # X-axis label
+    y = expression(paste("mg MAOC ", g^{-1}, " soil")) # Y-axis label
+  )
+
+Figure8d
+
+  theme(legend.position = "none",           # Remove legend
+        axis.title = element_text(size = 14),  # Axis title size
+        axis.text = element_text(size = 12),   # Axis text size
+        axis.line = element_line(color = "black"),  # Add axis lines
+        axis.ticks = element_line(color = "black"),  # Optional: Add ticks
+        panel.grid = element_blank()) +  # Remove grid lines to make things cleaner
+  labs(
+    x = expression(paste("mg POC ", g^{-1}, " soil")),  # X-axis label
+    y = expression(paste("mg MAOC ", g^{-1}, " soil")) # Y-axis label
+  )
+
+Figure8d
+
+
+# Save the plot
+ggsave("Figure8a.jpeg", width = 4, height = 4) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Figure8a
+# Fit the linear model
+lm_model <- lm(mgCpergSoilM ~ mgCpergSoilP, data = data)
+
+# Get the summary of the model
+model_summary <- summary(lm_model)
+
+# Extract slope and p-value
+slope <- model_summary$coefficients[2, 1]  # Slope (the coefficient of mgCpergSoilP)
+p_value <- model_summary$coefficients[2, 4]  # P-value for the slope
+
+# Print the results
+print(paste("Slope:", slope))
+print(paste("P-value:", p_value))
+
+# Display the plot
+Figure8a
+
+ 
+
+
+
+
+Figure8a<-ggplot(data, aes(x = mgCpergSoilP, y = mgCpergSoilM)) +
   geom_point(alpha = 0.5) +
   stat_smooth(method = "lm", se = FALSE, color = "black") +
   labs(
@@ -1401,13 +2422,21 @@ Figure8<-ggplot(data, aes(x = mgCpergSoilP, y = mgCpergSoilM)) +
     y = expression(paste("mg MAOC ", g^{-1}, " soil"))
   ) +
   theme_minimal()
-Figure8
-ggsave("Figure8.jpeg", width = 15, height = 8)
+
+# Adjust the legend text size
+Figure8a <- Figure8a + 
+  theme(legend.text = element_text(size = 16),  # Increase legend text size
+        legend.title = element_text(size = 18)) +  # Increase legend title size
+  theme(legend.key.size = unit(1.5, "cm"))  # Increase legend key size for better visibility
+Figure8a
+ggsave("Figure8a.jpeg", width = 15, height = 8)  
   
-  # Subset the data frame to get only the rows where Type.x is 'Field_crops'
+  
+
+# Subset the data frame to get only the rows where Type.x is 'Field_crops'
   field_crops_samples <- subset(data, Type.x == "Field crops")
-  
-  # Extract the Field_code for those samples
+
+# Extract the Field_code for those samples
   field_crops_codes <- field_crops_samples$Field_Code
   
   # Print the result
@@ -1568,7 +2597,7 @@ for (i in 1:length(tukey_results)) {
 
 #regression of MAOM and tillage
 
-regression_model <- lm(mgCpergSoilP ~ Tillage_1to4, data = data)
+regression_model <- lm(mgCpergSoilM ~ Tillage_1to4, data = data)
 
 #Summarize the regression model
 summary(regression_model)
@@ -1593,7 +2622,7 @@ data_with_predictions <- data %>%
             .groups = 'drop')
 
 # Plot the data
-ggplot(data, aes(x = Tillage_1to4, y = mgCpergSoilP)) +
+ggplot(data, aes(x = Tillage_1to4, y = mgCpergSoilM)) +
   geom_jitter(width = 0.2, size = 2, alpha = 0.5) +  # Scatter plot with jitter to avoid overplotting
   geom_point(data = data_with_predictions, aes(x = Tillage_1to4, y = mean_predicted), color = "red", size = 3, shape = 1) +  # Predicted values
   geom_line(data = data_with_predictions, aes(x = Tillage_1to4, y = mean_predicted, group = 1), color = "blue", size = 1) +  # Regression line
@@ -1603,6 +2632,55 @@ ggplot(data, aes(x = Tillage_1to4, y = mgCpergSoilP)) +
        color = "Legend") +
   scale_x_discrete(labels = c("1" = "No Till", "2" = "1-7inch Till", "3" = "7-9inch Till", "4" = ">9inch Till")) +  # Customize x-axis labels
   theme_minimal()
+
+
+# Create the data
+tillMAOC <- data.frame(
+  Tillage_Category = c("No-till", "1-7 inch", "7-9 inch", "> 9 inch"),
+  MAOC = c(18.9, 15.9, 15.1, 17.7),
+  se = c(1.20, 1.08, 1.66, 2.02)
+)
+
+# Perform one-way ANOVA
+anova_result <- aov(MAOC ~ Tillage_Category, data = tillMAOC)
+
+# Tukey's post hoc test
+tukey_result <- TukeyHSD(anova_result, "Tillage_Category")
+
+# View Tukey's test results
+print(tukey_result)
+
+#Supplement Table 1 significance of differences
+# Values for No-Till
+mean_no_till <- 18.9
+se_no_till <- 1.2
+
+# Values for other tillage levels
+means_other <- c(15.9, 15.1, 17.7)
+ses_other <- c(1.08, 1.66, 2.02)
+
+# Calculate the mean and SE for the comparison group
+mean_other <- mean(means_other)
+se_other <- sqrt(sum(ses_other^2) / length(ses_other))  # Pooled SE
+
+# Calculate the t-statistic
+mean_diff <- mean_no_till - mean_other
+t_stat <- mean_diff / sqrt(se_no_till^2 + se_other^2)
+
+# Degrees of freedom for the comparison (approximation)
+df <- length(means_other) - 1
+
+# Calculate the p-value
+p_value <- 2 * pt(-abs(t_stat), df)
+
+# Output results
+mean_other
+mean_diff
+t_stat
+p_value
+
+
+
 
 
 # Example scatter plot with jitter
@@ -1647,9 +2725,147 @@ data <- data %>%
 # Ensure the new variable is a factor
 data$Tillage_Grouped <- as.factor(data$Tillage_Grouped)
 
+View(data)
 # Perform ANOVA
 anova_result <- aov(mgCpergSoilM ~ Tillage_Grouped, data = data)
 summary(anova_result)
+# Perform ANOVA
+anova_result <- aov(aggregate_stability ~ Tillage_Grouped, data = data)
+summary(anova_result)
+# Perform ANOVA
+anova_result <- aov(aggregate_stability ~ AP, data = data)
+summary(anova_result)
+
+# Load the dplyr package
+library(dplyr)
+
+# Load the dplyr package
+library(dplyr)
+
+# Load the dplyr package
+library(dplyr)
+
+# Calculate mean, standard error, and sample size for mgCpergSoilP and mgCpergSoilM by Tillage_Grouped
+summary_stats <- data %>%
+  group_by(Tillage_Grouped) %>%
+  summarize(
+    n = n(),  # Sample size
+    mean_mgCpergSoilP = mean(mgCpergSoilP, na.rm = TRUE),  # Mean for mgCpergSoilP
+    se_mgCpergSoilP = sd(mgCpergSoilP, na.rm = TRUE) / sqrt(n()),  # SE for mgCpergSoilP
+    mean_mgCpergSoilM = mean(mgCpergSoilM, na.rm = TRUE),  # Mean for mgCpergSoilM
+    se_mgCpergSoilM = sd(mgCpergSoilM, na.rm = TRUE) / sqrt(n())   # SE for mgCpergSoilM
+  )
+
+# View the summary statistics
+print(summary_stats)
+
+# Conduct a t-test for mgCpergSoilP
+t_test_P <- t.test(mgCpergSoilP ~ Tillage_Grouped, data = data)
+
+# Print the results
+print(t_test_P)
+# Filter the data to remove NAs in mgCpergSoilP and mgCpergSoilM
+data_filtered <- data %>%
+  filter(!is.na(mgCpergSoilP), !is.na(mgCpergSoilM))
+
+# Conduct a t-test for mgCpergSoilP
+t_test_P <- t.test(mgCpergSoilP ~ Tillage_Grouped, data = data_filtered)
+
+# Print the results
+print(t_test_P)
+
+# Conduct a t-test for mgCpergSoilM
+t_test_M <- t.test(mgCpergSoilM ~ Tillage_Grouped, data = data_filtered)
+
+# Print the results
+print(t_test_M)
+
+
+
+
+# Filter the data to remove NAs in mgCpergSoilP and mgCpergSoilM
+data_filtered <- data %>%
+  filter(!is.na(mgCpergSoilP), !is.na(mgCpergSoilM))
+
+# Conduct a t-test for mgCpergSoilP
+t_test_P <- t.test(mgCpergSoilP ~ Tillage_Grouped, data = data_filtered)
+
+# Print the results
+print(t_test_P)
+
+# Conduct a t-test for mgCpergSoilM
+t_test_M <- t.test(mgCpergSoilM ~ Tillage_Grouped, data = data_filtered)
+
+# Print the results
+print(t_test_M)
+
+# Calculate mean and standard error for each group in Tilled_Grouped
+summary_stats <- data %>%
+  group_by(Tilled_Grouped) %>%
+  summarize(
+    mean_value = mean(your_column, na.rm = TRUE),  # Replace 'your_column' with the name of the column you want the mean and SE for
+    se_value = sd(your_column, na.rm = TRUE) / sqrt(n())  # Standard error calculation
+  )
+
+# View the summary statistics
+print(summary_stats)
+
+
+# percent greater POC in notill
+mean_P_notill <- 12.5 
+mean_p_till <- 7.58
+
+# Calculate the percent increase in POC based on the mean value
+percent_increase_poc_till <- (mean_P_notill-mean_p_till) / mean_p_till
+
+percent_increase_poc_till
+
+# percent greater MAOC in notill
+mean_M_notill <- 18.9 
+mean_m_till <- 16.1
+
+# Calculate the percent increase in POC based on the mean value
+percent_increase_maoc_till <- (mean_M_notill-mean_m_till) / mean_m_till
+
+percent_increase_maoc_till
+
+# Means, standard errors, and sample sizes
+means <- c(15.9, 15.1, 17.7)
+ses <- c(1.08, 1.66, 2.02)
+sample_sizes <- c(39, 17, 13)
+
+# Calculate the weighted mean for the non-no-till categories
+weighted_mean_non_notill <- sum(means * sample_sizes) / sum(sample_sizes)
+weighted_mean_non_notill
+combined_se_non_notill <- sqrt(sum((ses^2) * sample_sizes) / sum(sample_sizes))
+combined_se_non_notill
+
+# No-till values
+mean_notill <- 18.9
+se_notill <- 1.20
+n_notill <- 34
+
+# Combined non-no-till values
+mean_till <- weighted_mean_non_notill
+se_till <- combined_se_non_notill
+n_till <- sum(sample_sizes)
+
+# Calculate the pooled standard error
+pooled_se <- sqrt((se_notill^2 / n_notill) + (se_till^2 / n_till))
+
+# Calculate the t statistic
+t_stat <- (mean_notill - mean_till) / pooled_se
+t_stat
+
+# Degrees of freedom (approximation for unequal variances)
+df <- (se_notill^2 / n_notill + se_till^2 / n_till)^2 / 
+  (((se_notill^2 / n_notill)^2 / (n_notill - 1)) + ((se_till^2 / n_till)^2 / (n_till - 1)))
+
+# Calculate the p-value
+p_value <- 2 * pt(-abs(t_stat), df)
+p_value
+
+
 
 # If ANOVA is significant, perform Tukey's HSD test
 if (summary(anova_result)[[1]]$`Pr(>F)`[1] < 0.05) {
@@ -1708,6 +2924,160 @@ summary(anova_result)
 tukey_result <- TukeyHSD(anova_result)
 print(tukey_result)
 
+
+#Perform ANOVA
+anova_result <- aov(aggregate_stability ~ Tillage_Grouped, data = data)
+summary(anova_result)
+
+#Perform Tukey's HSD test if ANOVA is significant
+tukey_result <- TukeyHSD(anova_result)
+print(tukey_result)
+
+
+# Create box plot with means
+ggplot(data, aes(x = Tillage_1to4, y = aggregate_stability)) +
+  geom_boxplot(outlier.shape = NA, fill = "lightblue", alpha = 0.5) +
+  geom_jitter(width = 0.3, height = 0, alpha = 0.7) +
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +
+  labs(x = "Tillage", y = "Aggregate Stability") +
+  ggtitle("Relationship between Tillage and Aggregate Stability") +
+  theme_minimal()
+
+# Create scatter plot with regression line and slope
+ggplot(data, aes(x = Tillage_Grouped, y = aggregate_stability)) +
+  geom_point(alpha = 0.7) +  # Scatter plot of the data points
+  geom_smooth(method = "lm", se = TRUE, color = "blue") +  # Add regression line with confidence interval
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Mark means in red
+  labs(x = "Tillage", y = "Aggregate Stability") +
+  ggtitle("Regression of Tillage vs. Aggregate Stability") +
+  theme_minimal() +
+  annotate("text", x = Inf, y = Inf, hjust = 1.1, vjust = 1.5, size = 4,
+           label = paste("Slope:", round(coef(lm(aggregate_stability ~ Tillage_1to4, data = data))[2], 2)))
+
+
+
+#Create the new dataframe 'data_clean' with the necessary filters and grouping
+data_clean <- data %>%
+  # Remove NAs in Tillage_Grouped, AP, and aggregate_stability
+  filter(!is.na(Tillage_Grouped), !is.na(AP), !is.na(aggregate_stability)) %>%
+  
+  # Create the new column 'AP' based on Type.x
+  mutate(AP = case_when(
+    Type.x %in% c("Hay", "Pasture") ~ "perennial",
+    Type.x %in% c("Corn", "Veg") ~ "annual",
+    TRUE ~ NA_character_  # Handles any unspecified values
+  )) %>%
+  
+  # Reclassify Tillage_Grouped variable as "No-Till" and "Till"
+  mutate(Tillage_Grouped = factor(ifelse(Tillage_Grouped == 1, "No-Till", "Till")))
+
+#Supplement Figure
+ggplot(data, aes(x = Tillage_Grouped, y = aggregate_stability, fill = Tillage_Grouped)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +
+  geom_jitter(width = 0.2, alpha = 0.7) +
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "Tillage", y = "Aggregate Stability", fill = NULL) +  # Remove legend title
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal()
+# Conduct a two-sample t-test
+t_test_result <- t.test(aggregate_stability ~ Tillage_Grouped, data = data_clean)
+
+# Extract the mean difference and p-value
+mean_diff <- t_test_result$estimate[1] - t_test_result$estimate[2]
+p_value <- t_test_result$p.value
+
+print(mean_diff)
+print(p_value)
+# Calculate the mean for the No-Till group
+mean_no_till <- mean(data_clean$aggregate_stability[data_clean$Tillage_Grouped == "No-Till"], na.rm = TRUE)
+# Calculate the mean for the No-Till group
+mean_till <- mean(data_clean$aggregate_stability[data_clean$Tillage_Grouped == "Till"], na.rm = TRUE)
+
+# Print the mean
+mean_till
+# Print the mean
+mean_no_till
+mean_no_till <- 68.01775  # Mean in No-Till group
+mean_till <- 38.63691         # Example mean in Till group, replace with your value
+
+percent_increase <- ((mean_no_till - mean_till) / mean_till) * 100
+percent_increase
+
+# Calculate the mean for the Annual and Pere
+mean_pere<- mean(data_clean$aggregate_stability[data_clean$AP == "perennial"], na.rm = TRUE)
+mean_annual <- mean(data_clean$aggregate_stability[data_clean$AP == "annual"], na.rm = TRUE)
+print(mean_pere)
+mean_annual
+mean_pere <-  66.52411 # Replace
+mean_annual <-   36.32961      # Replace
+
+percent_increase <- ((mean_pere - mean_annual) / mean_annual) * 100
+percent_increase
+
+# Conduct a two-sample t-test
+t_test_result <- t.test(aggregate_stability ~ AP, data = data_clean)
+
+# Extract the mean difference and p-value
+mean_diff <- t_test_result$estimate[1] - t_test_result$estimate[2]
+p_value <- t_test_result$p.value
+p_value
+
+# Determine the y-axis limits from the data
+y_limits <- range(data_clean$aggregate_stability, na.rm = TRUE)
+
+# Remove rows where aggregate_stability is NA (but keep all Tillage_Grouped values)
+data_clean <- data_clean[!is.na(data_clean$aggregate_stability), ]
+
+# Rename Tillage_Grouped categories: 1 = "No-Till", 2, 3, 4 = "Till"
+data_clean$Tillage_Grouped <- factor(data_clean$Tillage_Grouped, 
+                                     levels = c(1, 2, 3, 4), 
+                                     labels = c("No-Till", "Till", "Till", "Till"))
+
+# Check that the factor levels are correctly assigned
+table(data_clean$Tillage_Grouped)
+
+# Plot for Tillage_Grouped
+plot_AgTill <- ggplot(data_clean, aes(x = Tillage_Grouped, y = aggregate_stability, fill = Tillage_Grouped)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +
+  geom_jitter(width = 0.2, alpha = 0.7) +
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "Tillage Type", y = "Aggregate Stability", fill = NULL) +  # Set labels for axes
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() +
+  ylim(y_limits)  # Set the same y-limits
+
+# Print the plot
+print(plot_AgTill)
+
+
+
+# Plot for AP (Perennial vs Annual)
+# Ensure that the levels for AP are in the correct order: "Perennial", "Annual"
+data_clean$AP <- factor(data_clean$AP, levels = c("Perennial", "Annual"))
+
+plot_AgAP <- ggplot(data_clean, aes(x = AP, y = aggregate_stability, fill = AP)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +
+  geom_jitter(width = 0.2, alpha = 0.7) +
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = NULL, y = NULL) +  # Remove y-axis label for this plot
+  scale_fill_manual(values = c("Perennial" = "blue", "Annual" = "orange")) +  # Set specific colors for the bars
+  scale_x_discrete(labels = c("Perennial", "Annual")) +  # Ensure correct order of x-axis labels
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() +
+  ylim(y_limits)  # Set the same y-limits
+
+# Combine the two plots side by side with shared y-axis
+combined_plot <- ggarrange(plot_AgTill, plot_AgAP,
+                           labels = c("a", "b"),  # Add labels A and B
+                           ncol = 2, nrow = 1,
+                           align = "hv")  # Align both horizontally and vertically
+
+# Print the combined plot
+print(combined_plot)
+
+# Optional: Perform a t-test to compare means of aggregate stability between the two groups
+t_test_result <- t.test(aggregate_stability ~ Tillage_Grouped, data = data_clean)
+print(t_test_result)
 # Optionally, plot the Tukey HSD results
 plot(tukey_result)
 
@@ -1742,6 +3112,69 @@ ggplot(data, aes(x = Type.x, y = active_carbon)) +
   ggtitle("Relationship between Field Type and Active Carbon") +
   theme_minimal()
 
+
+# Create box plot with means
+ggplot(data, aes(x = Type.x, y = mgCpergSoilP)) +
+  geom_boxplot(outlier.shape = NA, fill = "lightblue", alpha = 0.5) +
+  geom_jitter(width = 0.3, height = 0, alpha = 0.7) +
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +
+  labs(x = "Crop Type", y = "mg C POM") +
+   theme_minimal()
+
+
+ggplot(data) +
+  geom_boxplot(aes(x = Type.x, y = mgCpergSoilP), outlier.shape = NA, fill = "lightblue", alpha = 0.5) +
+  geom_boxplot(aes(x = Type.x, y = mgCpergSoilM), outlier.shape = NA, fill = "lightgreen", alpha = 0.5) +  # Second box plot for mgCpergSoilM
+  geom_jitter(aes(x = Type.x, y = mgCpergSoilP), width = 0.3, height = 0, alpha = 0.7) +
+  geom_jitter(aes(x = Type.x, y = mgCpergSoilM), width = 0.3, height = 0, color = "darkgreen", alpha = 0.7) +  # Jitter for mgCpergSoilM
+  stat_summary(aes(x = Type.x, y = mgCpergSoilP), fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +
+  stat_summary(aes(x = Type.x, y = mgCpergSoilM), fun = "mean", geom = "point", shape = 20, size = 3, color = "blue") +  # Mean for mgCpergSoilM
+  labs(x = "Crop Type", y = "mg POC(blue) and MAOC (green) g"^-1~"soil") +
+  theme_minimal()
+
+library(dplyr)
+library(ggplot2)
+
+# Filter out wheat data
+filtered_data <- data %>%
+  filter(Type.x != "Wheat")
+
+# Create the plot with the filtered data
+ggplot(filtered_data) +
+  geom_boxplot(aes(x = Type.x, y = mgCpergSoilP), outlier.shape = NA, fill = "lightblue", alpha = 0.5) +
+  geom_boxplot(aes(x = Type.x, y = mgCpergSoilM), outlier.shape = NA, fill = "lightgreen", alpha = 0.5) +  # Second box plot for mgCpergSoilM
+  geom_jitter(aes(x = Type.x, y = mgCpergSoilP), width = 0.3, height = 0, alpha = 0.7) +
+  geom_jitter(aes(x = Type.x, y = mgCpergSoilM), width = 0.3, height = 0, color = "darkgreen", alpha = 0.7) +  # Jitter for mgCpergSoilM
+  stat_summary(aes(x = Type.x, y = mgCpergSoilP), fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +
+  stat_summary(aes(x = Type.x, y = mgCpergSoilM), fun = "mean", geom = "point", shape = 20, size = 3, color = "blue") +  # Mean for mgCpergSoilM
+  labs(x = "Crop Type", y = "mg POC(blue) and MAOC (green) g"^-1~"soil" +
+  theme_minimal()
+
+  # Filter out wheat data
+  filtered_data <- data %>%
+    filter(Type.x != "Wheat")  # Adjust to match the exact value in your dataset
+  
+  # Create the plot with the filtered data
+  ggplot(filtered_data) +
+    geom_boxplot(aes(x = Type.x, y = mgCpergSoilP), outlier.shape = NA, fill = "lightblue", alpha = 0.5) +
+    geom_boxplot(aes(x = Type.x, y = mgCpergSoilM), outlier.shape = NA, fill = "lightgreen", alpha = 0.5) +  # Second box plot for mgCpergSoilM
+    geom_jitter(aes(x = Type.x, y = mgCpergSoilP), width = 0.3, height = 0, alpha = 0.7) +
+    geom_jitter(aes(x = Type.x, y = mgCpergSoilM), width = 0.3, height = 0, color = "darkgreen", alpha = 0.7) +  # Jitter for mgCpergSoilM
+    stat_summary(aes(x = Type.x, y = mgCpergSoilP), fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +
+    stat_summary(aes(x = Type.x, y = mgCpergSoilM), fun = "mean", geom = "point", shape = 20, size = 3, color = "blue") +  # Mean for mgCpergSoilM
+    labs(x = "Crop Type", y = expression("mg POC (blue) and MAOC (green) g"^{-1}~"soil")) +  # Fixed y-axis label
+    theme_minimal()
+  
+  # Create the plot with the filtered data
+  ggplot(filtered_data) +
+    geom_boxplot(aes(x = AP, y = mgCpergSoilP), outlier.shape = NA, fill = "lightblue", alpha = 0.5) +
+    geom_boxplot(aes(x = AP, y = mgCpergSoilM), outlier.shape = NA, fill = "lightgreen", alpha = 0.5) +  # Second box plot for mgCpergSoilM
+    geom_jitter(aes(x = AP, y = mgCpergSoilP), width = 0.3, height = 0, alpha = 0.7) +
+    geom_jitter(aes(x = AP, y = mgCpergSoilM), width = 0.3, height = 0, color = "darkgreen", alpha = 0.7) +  # Jitter for mgCpergSoilM
+    stat_summary(aes(x = AP, y = mgCpergSoilP), fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +
+    stat_summary(aes(x = AP, y = mgCpergSoilM), fun = "mean", geom = "point", shape = 20, size = 3, color = "blue") +  # Mean for mgCpergSoilM
+    labs(x = "Crop Type", y = expression("mg POC (blue) and MAOC (green) g"^{-1}~"soil")) +  # Fixed y-axis label
+    theme_minimal()
 
 #POM and MAOM
 # Perform linear regression
@@ -1955,3 +3388,501 @@ result <- data %>%
 
 # Print the result
 print(result)
+
+
+# Supplement Figure 2 Final
+# Determine the y-axis limits from the data
+y_limits <- range(data_clean$aggregate_stability, na.rm = TRUE)
+
+# Plot for Tillage_Grouped
+plot_AgTill <- ggplot(data_clean, aes(x = Tillage_Grouped, y = aggregate_stability, fill = Tillage_Grouped)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +
+  geom_jitter(width = 0.2, alpha = 0.7) +
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "", y = "Aggregate Stability", fill = NULL) +  # Remove legend title
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() +
+  ylim(y_limits)  # Set the same y-limits
+
+# Plot for AP (Perennial vs Annual)
+# Ensure that the levels for AP are in the correct order: "Perennial", "Annual"
+data_clean$AP <- factor(data_clean$AP, levels = c("Perennial", "Annual"))
+
+plot_AgAP <- ggplot(data, aes(x = AP, y = aggregate_stability, fill = AP)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +
+  geom_jitter(width = 0.2, alpha = 0.7) +
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = NULL, y = NULL) +  # Remove y-axis label for this plot
+  scale_fill_manual(values = c("Perennial" = "blue", "Annual" = "orange")) +  # Set specific colors for the bars
+  scale_x_discrete(labels = c("Perennial", "Annual")) +  # Ensure correct order of x-axis labels
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() +
+  ylim(y_limits)  # Set the same y-limits
+
+plot_AgAP
+
+
+# Remove rows where AP is NA (to exclude "NA" category)
+data_clean <- data[!is.na(data$AP), ]
+
+# Ensure 'AP' is a factor and levels are set correctly
+data_clean$AP <- factor(data_clean$AP, levels = c("Perennial", "Annual"))
+
+# Determine the y-axis limits from the data (if needed)
+y_limits <- range(data_clean$aggregate_stability, na.rm = TRUE)
+
+# Plot for AP on x-axis and Aggregate Stability on y-axis
+plot_AgAP <- ggplot(data_clean, aes(x = AP, y = aggregate_stability, fill = AP)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points for better visibility
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "Crop Type", y = "Aggregate Stability") +  # Label x and y axes
+  scale_fill_manual(values = c("Perennial" = "blue", "Annual" = "orange")) +  # Color for Perennial and Annual
+  scale_x_discrete(labels = c("Perennial", "Annual")) +  # Set labels for x-axis
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() +  # Use minimal theme for better aesthetics
+  ylim(y_limits)  # Set the same y-limits
+
+# Display the plot
+plot_AgAP
+
+
+
+
+
+
+# Combine the two plots side by side with shared y-axis
+combined_plot <- ggarrange(plot_AgTill, plot_AgAP,
+                           labels = c("a", "b"),  # Add labels A and B
+                           ncol = 2, nrow = 1,
+                           align = "hv")  # Align both horizontally and vertically
+
+# Print the combined plot
+print(combined_plot)
+
+
+
+
+#############################NewCode Updated Final Supplement Figure2#########
+
+# Remove rows where Tillage_Grouped is NA
+data_clean <- data[!is.na(data$Tillage_Grouped), ]
+
+# Convert Tillage_Grouped to a factor and rename the levels
+data_clean$Tillage_Grouped <- factor(data_clean$Tillage_Grouped,
+                                     levels = c(1, 2, 3, 4), 
+                                     labels = c("No-Till", "Till", "Till", "Till"))
+
+# Create the plot
+AgTill<-ggplot(data_clean, aes(x = Tillage_Grouped, y = aggregate_stability, fill = Tillage_Grouped)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "", y = "Aggregate Stability", fill = NULL) +  # Axis labels and remove legend title
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() +  # Use a minimal theme
+  scale_x_discrete(labels = c("No-Till", "Till"))  # Rename x-axis labels
+
+
+# Remove rows where AP is NA (to exclude "NA" category)
+data_clean <- data[!is.na(data$AP), ]
+
+# Ensure 'AP' is a factor and levels are set correctly
+data_clean$AP <- factor(data_clean$AP, levels = c("Perennial", "Annual"))
+
+# Determine the y-axis limits from the data (if needed)
+y_limits <- range(data_clean$aggregate_stability, na.rm = TRUE)
+
+# Plot for AP on x-axis and Aggregate Stability on y-axis
+plot_AgAP <- ggplot(data_clean, aes(x = AP, y = aggregate_stability, fill = AP)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points for better visibility
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "Crop Type", y = "Aggregate Stability") +  # Label x and y axes
+  scale_fill_manual(values = c("Perennial" = "blue", "Annual" = "orange")) +  # Color for Perennial and Annual
+  scale_x_discrete(labels = c("Perennial", "Annual")) +  # Set labels for x-axis
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() +  # Use minimal theme for better aesthetics
+  ylim(y_limits)  # Set the same y-limits
+
+# Display the plot
+plot_AgAP
+
+
+############################# NewCode Updated Final Supplement Figure2 #########
+
+# Remove rows where Tillage_Grouped is NA
+data_clean <- data[!is.na(data$Tillage_Grouped), ]
+
+# Convert Tillage_Grouped to a factor and rename the levels
+data_clean$Tillage_Grouped <- factor(data_clean$Tillage_Grouped,
+                                     levels = c(1, 2, 3, 4), 
+                                     labels = c("No-Till", "Till", "Till", "Till"))
+
+# Create the plot for Tillage_Grouped (AgTill)
+AgTill <- ggplot(data_clean, aes(x = Tillage_Grouped, y = aggregate_stability, fill = Tillage_Grouped)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "", y = "Aggregate Stability", fill = NULL) +  # Axis labels and remove legend title
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() +  # Use minimal theme
+  scale_x_discrete(labels = c("No-Till", "Till"))  # Rename x-axis labels
+
+# Create the plot for Tillage_Grouped (AgTill)
+AgTill <- ggplot(data_clean, aes(x = Tillage_Grouped, y = aggregate_stability, fill = Tillage_Grouped)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "", y = "Aggregate Stability", fill = NULL) +  # Axis labels and remove legend title
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() +  # Use minimal theme
+  scale_x_discrete(labels = c("No-Till", "Till")) +  # Rename x-axis labels
+  theme(
+    axis.line = element_line(color = "black", size = 0.5),  # Add black axis lines
+    axis.ticks = element_line(color = "black", size = 0.5),  # Add ticks on the axes
+    axis.text = element_text(size = 12, color = "black"),  # Customize axis text size and color
+    axis.title = element_text(size = 14, color = "black")  # Customize axis title size and color
+  )
+
+# Display the plot
+print(AgTill)
+
+AgTill
+# Remove rows where AP is NA (to exclude "NA" category)
+data_clean <- data[!is.na(data$AP), ]
+
+# Ensure 'AP' is a factor and levels are set correctly
+data_clean$AP <- factor(data_clean$AP, levels = c("Perennial", "Annual"))
+
+# Determine the y-axis limits from the data (if needed)
+y_limits <- range(data_clean$aggregate_stability, na.rm = TRUE)
+
+# Create the plot for AP (plot_AgAP) to match AgTill
+plot_AgAP <- ggplot(data_clean, aes(x = AP, y = aggregate_stability, fill = AP)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points for better visibility
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "", y = "") +  # Label x and y axes
+  scale_fill_manual(values = c("Perennial" = "pink", "Annual" = "grey")) +  # Use consistent colors
+  scale_x_discrete(labels = c("Perennial", "Annual")) +  # Set x-axis labels
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() + 
+  theme(
+    axis.line = element_line(color = "black", size = 0.5),  # Add black axis lines
+    axis.ticks = element_line(color = "black", size = 0.5),  # Add ticks on the axes
+    axis.text = element_text(size = 12, color = "black"),  # Customize axis text size and color
+    axis.title = element_text(size = 14, color = "black")  # Customize axis title size and color
+  )
+  # Use the same minimal theme
+  ylim(y_limits)  # Set consistent y-limits
+
+# Display the plot
+plot_AgAP
+
+
+
+# Combine the two plots side by side with shared y-axis
+combined_plot <- ggarrange(AgTill, plot_AgAP,
+                           labels = c("a", "b"),  # Add labels A and B
+                           ncol = 2, nrow = 1,
+                           align = "hv")  # Align both horizontally and vertically
+
+# Print the combined plot
+print(combined_plot)
+
+
+
+
+
+
+
+
+
+
+# Remove rows where Tillage_Grouped is NA
+data_clean <- data[!is.na(data$Tillage_Grouped), ]
+
+# Convert Tillage_Grouped to a factor and rename the levels
+data_clean$Tillage_Grouped <- factor(data_clean$Tillage_Grouped,
+                                     levels = c(1, 2, 3, 4), 
+                                     labels = c("No-Till", "Till", "Till", "Till"))
+
+# Set color scheme for matching across plots
+fill_colors <- c("No-Till" = "pink", "Till" = "lightblue")
+
+# Create the plot for Tillage_Grouped (AgTill)
+AgTill <- ggplot(data_clean, aes(x = Tillage_Grouped, y = aggregate_stability, fill = Tillage_Grouped)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "", y = "Aggregate Stability", fill = NULL) +  # Axis labels and remove legend title
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() +  # Use minimal theme
+  scale_x_discrete(labels = c("No-Till", "Till")) +  # Rename x-axis labels
+    theme(
+    axis.line = element_line(color = "black", size = 0.5),  # Add black axis lines
+    axis.ticks = element_line(color = "black", size = 0.5),  # Add ticks on the axes
+    axis.text = element_text(size = 12, color = "black"),  # Customize axis text size and color
+    axis.title = element_text(size = 14, color = "black")  # Customize axis title size and color
+  )
+
+# Remove rows where AP is NA (to exclude "NA" category)
+data_clean <- data[!is.na(data$AP), ]
+
+# Ensure 'AP' is a factor and levels are set correctly
+data_clean$AP <- factor(data_clean$AP, levels = c("Perennial", "Annual"))
+
+# Determine the y-axis limits from the data (if needed)
+y_limits <- range(data_clean$aggregate_stability, na.rm = TRUE)
+
+# Create the plot for AP (plot_AgAP) to match AgTill
+plot_AgAP <- ggplot(data_clean, aes(x = AP, y = aggregate_stability, fill = AP)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points for better visibility
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "Crop Type", y = "Aggregate Stability") +  # Label x and y axes
+  scale_fill_manual(values = c("Perennial" = "pink", "Annual" = "lightblue")) +  # Use consistent colors
+  scale_x_discrete(labels = c("Perennial", "Annual")) +  # Set x-axis labels
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() + 
+  theme(
+    axis.line = element_line(color = "black", size = 0.5),  # Add black axis lines
+    axis.ticks = element_line(color = "black", size = 0.5),  # Add ticks on the axes
+    axis.text = element_text(size = 12, color = "black"),  # Customize axis text size and color
+    axis.title = element_text(size = 14, color = "black")  # Customize axis title size and color
+  ) +
+  ylim(y_limits)  # Set consistent y-limits
+
+# Combine the two plots side by side with shared y-axis
+combined_plot <- ggarrange(AgTill, plot_AgAP,
+                           labels = c("a", "b"),  # Add labels A and B
+                           ncol = 2, nrow = 1,
+                           align = "hv")  # Align both horizontally and vertically
+
+# Print the combined plot
+print(combined_plot)
+      
+# Remove rows where Tillage_Grouped is NA
+data_clean <- data[!is.na(data$Tillage_Grouped), ]
+
+# Convert Tillage_Grouped to a factor and rename the levels
+data_clean$Tillage_Grouped <- factor(data_clean$Tillage_Grouped,
+                                     levels = c(1, 2, 3, 4), 
+                                     labels = c("No-Till", "Till", "Till", "Till"))
+
+# Set color scheme for matching across plots
+fill_colors <- c("No-Till" = "pink", "Till" = "lightblue")
+
+# Create the plot for Tillage_Grouped (AgTill)
+AgTill <- ggplot(data_clean, aes(x = Tillage_Grouped, y = aggregate_stability, fill = Tillage_Grouped)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "", y = "Aggregate Stability", fill = NULL) +  # Axis labels and remove legend title
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() +  # Use minimal theme
+  scale_x_discrete(labels = c("No-Till", "Till")) +  # Rename x-axis labels
+  scale_fill_manual(values = fill_colors) +  # Apply the color scheme to fill
+  theme(
+    axis.line = element_line(color = "black", size = 0.5),  # Add black axis lines
+    axis.ticks = element_line(color = "black", size = 0.5),  # Add ticks on the axes
+    axis.text = element_text(size = 12, color = "black"),  # Customize axis text size and color
+    axis.title = element_text(size = 14, color = "black")  # Customize axis title size and color
+  )
+
+# Display the plot
+print(AgTill)
+
+# Remove rows where AP is NA (to exclude "NA" category)
+data_clean <- data[!is.na(data$AP), ]
+
+# Ensure 'AP' is a factor and levels are set correctly
+data_clean$AP <- factor(data_clean$AP, levels = c("Perennial", "Annual"))
+
+# Determine the y-axis limits from the data (if needed)
+y_limits <- range(data_clean$aggregate_stability, na.rm = TRUE)
+
+# Create the plot for AP (plot_AgAP) to match AgTill
+plot_AgAP <- ggplot(data_clean, aes(x = AP, y = aggregate_stability, fill = AP)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points for better visibility
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "", y = "") +  # Label x and y axes
+  scale_fill_manual(values = c("Perennial" = "pink", "Annual" = "darkgrey")) +  # Use consistent colors
+  scale_x_discrete(labels = c("Perennial", "Annual")) +  # Set x-axis labels
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() + 
+  theme(
+    axis.line = element_line(color = "black", size = 0.5),  # Add black axis lines
+    axis.ticks = element_line(color = "black", size = 0.5),  # Add ticks on the axes
+    axis.text = element_text(size = 12, color = "black"),  # Customize axis text size and color
+    axis.title = element_text(size = 14, color = "black")  # Customize axis title size and color
+  ) +
+  ylim(y_limits)  # Set consistent y-limits
+
+# Combine the two plots side by side with shared y-axis
+combined_plot <- ggarrange(AgTill, plot_AgAP,
+                           labels = c("a", "b"),  # Add labels A and B
+                           ncol = 2, nrow = 1,
+                           align = "hv")  # Align both horizontally and vertically
+
+# Print the combined plot
+print(combined_plot)
+
+# Save the plot
+ggsave("combined_plot.jpeg", plot = combined_plot, width = 10, height = 8, dpi=300)
+
+
+
+
+
+
+
+# Remove rows where Tillage_Grouped is NA
+data_clean <- data[!is.na(data$Tillage_Grouped), ]
+
+# Convert Tillage_Grouped to a factor and rename the levels
+data_clean$Tillage_Grouped <- factor(data_clean$Tillage_Grouped,
+                                     levels = c(1, 2, 3, 4), 
+                                     labels = c("No-Till", "Till", "Till", "Till"))
+
+# Set color scheme for matching across plots
+fill_colors <- c("No-Till" = "pink", "Till" = "darkgrey")
+
+# Create the plot for Tillage_Grouped (AgTill)
+AgTill <- ggplot(data_clean, aes(x = Tillage_Grouped, y = aggregate_stability, fill = Tillage_Grouped)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "", y = "Aggregate Stability", fill = NULL) +  # Axis labels and remove legend title
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() +  # Use minimal theme
+  scale_x_discrete(labels = c("No-Till", "Till")) +  # Rename x-axis labels
+  scale_fill_manual(values = fill_colors) +  # Apply the color scheme to fill
+  theme(
+    axis.line = element_line(color = "black", size = 0.5),  # Add black axis lines
+    axis.ticks = element_line(color = "black", size = 0.5),  # Add ticks on the axes
+    axis.text = element_text(size = 12, color = "black"),  # Customize axis text size and color
+    axis.title = element_text(size = 14, color = "black")  # Customize axis title size and color
+  )
+
+# Remove rows where AP is NA (to exclude "NA" category)
+data_clean <- data[!is.na(data$AP), ]
+
+# Ensure 'AP' is a factor and levels are set correctly
+data_clean$AP <- factor(data_clean$AP, levels = c("Perennial", "Annual"))
+
+# Determine the y-axis limits from the data (if needed)
+y_limits <- range(data_clean$aggregate_stability, na.rm = TRUE)
+
+# Create the plot for AP (plot_AgAP) to match AgTill
+plot_AgAP <- ggplot(data_clean, aes(x = AP, y = aggregate_stability, fill = AP)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points for better visibility
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "", y = "Aggregate Stability") +  # Label x and y axes
+  scale_fill_manual(values = c("Perennial" = "pink", "Annual" = "darkgrey")) +  # Use consistent colors
+  scale_x_discrete(labels = c("Perennial", "Annual")) +  # Set x-axis labels
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() + 
+  theme(
+    axis.line = element_line(color = "black", size = 0.5),  # Add black axis lines
+    axis.ticks = element_line(color = "black", size = 0.5),  # Add ticks on the axes
+    axis.text = element_text(size = 12, color = "black"),  # Customize axis text size and color
+    axis.title = element_text(size = 14, color = "black")  # Customize axis title size and color
+  ) +
+  ylim(y_limits)  # Set consistent y-limits for shared y-axis
+
+# Combine the two plots side by side with shared y-axis
+combined_plot <- ggarrange(AgTill, plot_AgAP,
+                           labels = c("a", "b"),  # Add labels A and B
+                           ncol = 2, nrow = 1,
+                           align = "hv",  # Align both horizontally and vertically
+                           heights = c(1))  # Adjust heights if needed to match axis sizes
+
+# Print the combined plot
+print(combined_plot)
+
+
+
+
+
+
+
+# Remove rows where Tillage_Grouped is NA
+data_clean <- data[!is.na(data$Tillage_Grouped), ]
+
+# Convert Tillage_Grouped to a factor and rename the levels
+data_clean$Tillage_Grouped <- factor(data_clean$Tillage_Grouped,
+                                     levels = c(1, 2, 3, 4), 
+                                     labels = c("No-Till", "Till", "Till", "Till"))
+
+# Set color scheme for matching across plots
+fill_colors <- c("No-Till" = "pink", "Till" = "darkgrey")
+
+# Create the plot for Tillage_Grouped (AgTill)
+AgTill <- ggplot(data_clean, aes(x = Tillage_Grouped, y = aggregate_stability, fill = Tillage_Grouped)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "", y = "Aggregate Stability", fill = NULL) +  # Axis labels and remove legend title
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() +  # Use minimal theme
+  scale_x_discrete(labels = c("No-Till", "Till")) +  # Rename x-axis labels
+  scale_fill_manual(values = fill_colors) +  # Apply the color scheme to fill
+  theme(
+    axis.line = element_line(color = "black", size = 0.5),  # Add black axis lines
+    axis.ticks = element_line(color = "black", size = 0.5),  # Add ticks on the axes
+    axis.text = element_text(size = 14, color = "black"),  # Customize axis text size and color
+    axis.title = element_text(size = 16, color = "black")  # Customize axis title size and color
+  )
+
+# Remove rows where AP is NA (to exclude "NA" category)
+data_clean <- data[!is.na(data$AP), ]
+
+# Ensure 'AP' is a factor and levels are set correctly
+data_clean$AP <- factor(data_clean$AP, levels = c("Perennial", "Annual"))
+
+# Determine the y-axis limits from the data (if needed)
+y_limits <- range(data_clean$aggregate_stability, na.rm = TRUE)
+
+# Create the plot for AP (plot_AgAP) to match AgTill
+plot_AgAP <- ggplot(data_clean, aes(x = AP, y = aggregate_stability, fill = AP)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) +  # Boxplot with no outliers
+  geom_jitter(width = 0.2, alpha = 0.7) +  # Add jittered points for better visibility
+  stat_summary(fun = "mean", geom = "point", shape = 20, size = 3, color = "red") +  # Show mean in red
+  labs(x = "", y = "Aggregate Stability") +  # Label x and y axes
+  scale_fill_manual(values = c("Perennial" = "pink", "Annual" = "darkgrey")) +  # Use consistent colors
+  scale_x_discrete(labels = c("Perennial", "Annual")) +  # Set x-axis labels
+  guides(fill = "none") +  # Remove the legend
+  theme_minimal() + 
+  theme(
+    axis.line = element_line(color = "black", size = 0.5),  # Add black axis lines
+    axis.ticks = element_line(color = "black", size = 0.5),  # Add ticks on the axes
+    axis.text = element_text(size = 14, color = "black"),  # Customize axis text size and color
+    axis.title = element_text(size = 16, color = "black"),  # Customize axis title size and color
+    axis.title.y = element_blank(),  # Remove the y-axis title
+    axis.text.y = element_blank()  # Remove the y-axis label
+  ) +
+  ylim(y_limits)  # Set consistent y-limits for shared y-axis
+
+# Remove the y-axis line and other y-axis elements for plot_AgAP (graph B)
+plot_AgAP <- plot_AgAP + 
+  theme(
+    axis.line.y = element_blank(),  # Remove y-axis line
+    axis.ticks.y = element_blank(),  # Remove y-axis ticks
+    axis.text.y = element_blank(),  # Remove y-axis labels (optional)
+    axis.title.y = element_blank()  # Remove y-axis title
+  )
+
+# Combine the two plots side by side with grid.arrange()
+SF2<-grid.arrange(AgTill, plot_AgAP,
+             ncol = 2, nrow = 1,
+             top = "",  # Add a title to the top if desired
+             widths = c(1, 1),  # Adjust widths if needed
+             heights = c(1)  # Adjust heights if needed
+)
+# Save the plot
+ggsave("SF2.jpeg", plot = SF2, width = 10, height = 8, dpi=300)
+

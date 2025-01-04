@@ -17,7 +17,8 @@ library(ggpubr)
 data <- read.csv("data.csv")
 view(data)
 summary(data$ph)
-
+summary(data$soil_texture_clay)
+summary(data$soil_texture_silt)
 #soil health regression
 
 # Perform linear regression
@@ -454,56 +455,9 @@ print(paste("Percent increase in MAOC for a 1% increase in actice carbon is", ro
 
 
 
-                  
-#for 3 way interaction of tmean, ppt, and texture Figure 6 Final
-
-summary(data$soil_texture_clay)
-summary(data$ppt.cm)
-pred_3way <- ggpredict(m3, terms = c("tmeanC","ppt.cm[101,110]", 
-  "soil_texture_clay[10, 32]"))
-
-pred_3way$ppt_group <- pred_3way$group
-levels(pred_3way$ppt_group) <- c("low (92-104)",  
-                                   "high (104-142)")
-pred_3way$clay_facet <- pred_3way$facet
-levels(pred_3way$clay_facet) <- c("low clay (6-19%)",  
-                                   "high clay (19-54%)")
-
-data <- data %>%
-  drop_na(ppt.cm) %>% 
-  drop_na(soil_texture_clay) %>% 
-  dplyr::mutate(ppt_group = cut(ppt.cm, breaks = c(92,104,142)),
-                clay_facet = cut(soil_texture_clay, breaks = c(6,19,54)))
-
-levels(data$ppt_group) <- c("low (92-104)",  
-                            "high (104-142)")
- 
-levels(data$clay_facet) <- c("low clay (6-19%)",  
-                                   "high clay (19-54%)")
-mgMAOM_3way <-data %>% 
-   ggplot() +
-   geom_point(aes(x = tmeanC, y = mgCpergSoilM, col = ppt_group), #plot your data
-              size = 1.5, alpha = 0.5) +
-   geom_line(pred_3way, mapping = aes(x=x, y=predicted, col = ppt_group), #plot the model's prediction (based on linear )
-             lwd = 1) +
-   facet_wrap(~clay_facet) +
-   own_theme+
-   #theme(legend.position = "none") +
-   scale_y_continuous(expression(paste("mg MAOC g"^-1,"soil"))) +
-   scale_x_continuous(expression("Mean Annual Temperature (°C)"),
-                      label = scales::comma) +
-   guides(col=guide_legend(title="Mean Annual Precipitation (cm)")) +
-   scale_color_manual(values = c("red", "blue")) 
- 
-mgMAOM_3way
-ggsave("mgMAOM_3way.jpeg", width = 8, height = 4)
- #share legend and a, b, ggarrange
-#get slope for the lines in the 3 way 
-mylist<- list(ppt.cm=c(101,110),soil_texture_clay=c(10,32))
-  
-emtrends(m3,pairwise~ppt.cm*soil_texture_clay,var="tmeanC", at=mylist)                
+                 
                    
-   #analyze data by field type. group by and color by field type this code is in progress
+ #analyze data by field type. group by and color by field type this code is in progress
     #exploration
                    mgMAOM_active_carbonbyField <-data
                      ggplot() +
@@ -538,6 +492,18 @@ emtrends(m3,pairwise~ppt.cm*soil_texture_clay,var="tmeanC", at=mylist)
        summary(field_anova)  
        
   TukeyHSD(field_anova)
+  
+  # Perform ANOVA
+  anova_result <- aov(mgCpergSoilM ~ Tillage_1to4, data = data)
+  
+  # Summarize the ANOVA result
+  summary(anova_result)
+  
+  # Apply Tukey's HSD test
+  tukey_result <- TukeyHSD(anova_result)
+  
+  # Print the Tukey HSD result
+  print(tukey_result)
             
 # Create a violin plot with individual data points
        ggplot(data, aes(x = Type.x, y = mgCpergSoilM)) +
@@ -572,11 +538,7 @@ emtrends(m3,pairwise~ppt.cm*soil_texture_clay,var="tmeanC", at=mylist)
          theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),  # Adjust text angle, justification, and size
                plot.margin = margin(5, 5, 10, 5))  # Increase the bottom margin to give more space to labels
        
-       
-       # Load the necessary library
-       library(dplyr)
-       
-       # Assuming 'data' is a data frame already loaded into your environment
+         # Assuming 'data' is a data frame already loaded into your environment
        # Replace this with your actual data loading method, e.g., read.csv or read_excel
        # data <- read.csv("your_data_file.csv")
        
@@ -599,12 +561,7 @@ emtrends(m3,pairwise~ppt.cm*soil_texture_clay,var="tmeanC", at=mylist)
            pMAOM_sd = sd(propM, na.rm = TRUE)
          )
        
-       # Print the summary table
-       print(summary)
-       
-       library(dplyr)
-       
-       # Grouping the data by 'Type.x' and calculating the required statistics
+      # Grouping the data by 'Type.x' and calculating the required statistics
        summary <- data %>%
          group_by(Type.x) %>%
          summarise(
@@ -631,4 +588,105 @@ emtrends(m3,pairwise~ppt.cm*soil_texture_clay,var="tmeanC", at=mylist)
        
        # Print the summary table
        print(summary)
+    ##########################################################################   
+    #Saturation Figure6Final
+       summary(data$AP)
+       View(data_clean)
+       summary(data$soil_texture_clay)
+       summary(data$soil_texture_silt)
+    
+       # Create a new column 'claySilt' that sums 'soil_texture_clay' and 'soil_texture_silt'
+       data <- data %>%
+         mutate(claySilt = soil_texture_clay + soil_texture_silt)
+      
+       # Create the plot
+       claySilt_MAOC <- ggplot(data, aes(x = claySilt, y = mgCpergSoilM)) +
+         geom_point(alpha = 0.5) +  # Scatter points
+         stat_smooth(method = "lm", se = TRUE, color = "black") +  # Add linear regression line with confidence intervals
+         labs(x = "Clay and Silt Content (%)",
+              y = expression("mg MAOC g"^-1~"soil")) +  # Y-axis label
+         own_theme +
+         theme_minimal() +  # Minimal theme for aesthetics
+         theme(axis.title.x = element_text(size = 12),  # Increase x-axis label size
+               axis.title.y = element_text(size = 12),  # Increase y-axis label size
+               axis.line = element_line(color = "black"))  # Add axis lines
+      
        
+              # Add custom lines for expected slope and error margins
+       slope <- 0.86  # Desired slope
+       error_margin <- 0.09  # Error margin for slope
+       
+       # Calculate upper and lower slopes
+       slope_upper <- slope + error_margin
+       slope_lower <- slope - error_margin
+       
+       claySilt_MAOC <- claySilt_MAOC +
+         geom_abline(slope = slope, intercept = 0, color = "red", linetype = "dashed", size = 1.2) +  # Expected slope
+         geom_abline(slope = slope_upper, intercept = 0, color = "blue", linetype = "dotted", size = 1.2) +  # Upper margin line
+         geom_abline(slope = slope_lower, intercept = 0, color = "blue", linetype = "dotted", size = 1.2)  # Lower margin line
+       
+       # Display the plot
+       claySilt_MAOC
+      ######################################TRYING
+       # Ensure 'AP' is a factor and then map colors to the levels of 'AP'
+       data_clean$AP <- as.factor(data_clean$AP)
+       summary(data_clean$AP)
+       # Create a new column 'claySilt' that sums 'soil_texture_clay' and 'soil_texture_silt'
+       data_clean <- data_clean %>%
+         mutate(claySilt = soil_texture_clay + soil_texture_silt)
+     
+       
+       # Create the plot with color mapped to 'AP' (Annual/Perennial)
+       claySilt_MAOC <- ggplot(data_clean, aes(x = claySilt, y = mgCpergSoilM, color = AP)) +
+         geom_point(alpha = 0.5) +  # Scatter points
+         stat_smooth(method = "lm", se = TRUE, color = "black") +  # Add linear regression line with confidence intervals
+         labs(x = "Clay and Silt Content (%)",
+              y = expression("mg MAOC g"^-1~"soil")) +  # Y-axis label
+         own_theme +
+         theme_minimal() +  # Minimal theme for aesthetics
+         theme(axis.title.x = element_text(size = 12),  # Increase x-axis label size
+               axis.title.y = element_text(size = 12),  # Increase y-axis label size
+               axis.line = element_line(color = "black"),  # Add axis lines
+               legend.title = element_blank(),  # Remove legend title
+               legend.position = "right") +  # Position legend on the right
+         scale_color_manual(values = c("Annual" = "#cd853f", "Perennial" = "darkgreen"))  # Custom colors for annual and perennial
+       
+     
+       # Add custom lines for expected slope and error margins
+       slope <- 0.86  # Desired slope
+       error_margin <- 0.09  # Error margin for slope
+       
+       # Calculate upper and lower slopes
+       slope_upper <- slope + error_margin
+       slope_lower <- slope - error_margin
+       
+       claySilt_MAOC <- claySilt_MAOC +
+         geom_abline(slope = slope, intercept = 0, color = "red", linetype = "dashed", size = 1.2) +  # Expected slope
+         geom_abline(slope = slope_upper, intercept = 0, color = "blue", linetype = "dotted", size = 1.2) +  # Upper margin line
+         geom_abline(slope = slope_lower, intercept = 0, color = "blue", linetype = "dotted", size = 1.2)  # Lower margin line
+       
+       # Display the plot
+       claySilt_MAOC
+       
+       #############################END TRY
+       
+       ggsave("claySilt_MAOC2.jpeg", width = 4, height = 5,dpi=300)
+        
+       # Save the plot 'claySilt_MAOC' as 'claySilt_MAOC2.jpeg'
+       ggsave("claySilt_MAOC2.jpeg", plot = claySilt_MAOC, width = 4, height = 5, dpi = 300)
+       
+        # Fit the linear model
+       model <- lm(mgCpergSoilM ~ claySilt, data = data)
+       
+       # Get the summary of the model to extract the slope and p-value
+       summary_model <- summary(model)
+       
+       # Extract the slope (coefficient for claySilt) and p-value
+       slope <- summary_model$coefficients[2, 1]  # Slope
+       p_value <- summary_model$coefficients[2, 4]  # p-value
+       
+       # Print the results
+       cat("Slope:", slope, "\n")
+       cat("p-value:", p_value, "\n")
+       
+  

@@ -297,10 +297,10 @@ m1M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC +
           + ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
 summary(m1M)
 
-#m2M=gls(C~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
- #         aggregate_stability + 
-  #        active_carbon + 
-   #       ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
+m2M=gls(C~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+         aggregate_stability + 
+         active_carbon + 
+        ph * soil_texture_clay,  data=data, na.action=na.exclude, method="ML")
 #summary(m2M)
 
 #anova(m1M, m2M)
@@ -309,7 +309,7 @@ m3M=gls(logitpropM~ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC +
                   active_carbon + 
           + ph * soil_texture_clay, data=data, na.action=na.exclude, method="ML")
 summary(m3M)
-#anova(m2M, m3M)
+anova(m1M, m3M)
 
 # Fit the GLS model 
 m4M <- gls(logitpropM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
@@ -318,7 +318,7 @@ m4M <- gls(logitpropM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC +
            na.action = na.exclude, 
            method = "ML")
 summary(m4M)
-anova(m4M)
+anova(m3M, m4M)
 
 #pseudo R squared calculation (fit between model predicted data and actual data)
 data$logitpropM.pred=as.vector(fitted(m4M))
@@ -531,60 +531,6 @@ PropM_Claytemp <-data %>%
 PropM_Claytemp
 
 
-#for 3 way interaction of tmean, ppt, and texture
-
-pred_3way <- ggpredict(m4M, terms = c("tmeanC","ppt.cm[101,110]", 
-                                     "soil_texture_clay[10, 32]"))
-
-pred_3way$ppt_group <- pred_3way$group
-levels(pred_3way$ppt_group) <- c("low (92-104)",  
-                                 "high (104-142)")
-pred_3way$clay_facet <- pred_3way$facet
-levels(pred_3way$clay_facet) <- c("low clay (6-19%)",  
-                                  "high clay (19-54%)")
-
-data <- data %>%
-  drop_na(ppt.cm) %>% 
-  drop_na(soil_texture_clay) %>% 
-  dplyr::mutate(ppt_group = cut(ppt.cm, breaks = c(92,104,142)),
-                clay_facet = cut(soil_texture_clay, breaks = c(6,19,54)))
-
-levels(data$ppt_group) <- c("low (92-104)",  
-                            "high (104-142)")
-
-levels(data$clay_facet) <- c("low clay (6-19%)",  
-                             "high clay (19-54%)")
-
-propMAOM_3way <-data %>% 
-  ggplot() +
-  geom_point(aes(x = tmeanC, y = logitpropM, col = ppt_group), #plot your data
-             size = 1.5, alpha = 0.5) +
-  geom_line(pred_3way, mapping = aes(x=x, y=predicted, col = ppt_group), #plot the model's prediction (based on linear )
-            lwd = 1) +
-  facet_wrap(~clay_facet) +
-  own_theme+
-  #theme(legend.position = "none") +
-  scale_y_continuous(expression(paste("Proportion of C as MAOC"))) +
-  scale_x_continuous(expression("Mean Annual Temperature (°C)"),
-                     label = scales::comma) +
-  guides(col=guide_legend(title="Mean Annual Precipitation (cm)")) +
-  scale_color_manual(values = c("red", "blue")) # adjust colors if needed
-
-propMAOM_3way
-ggsave("propMAOM_3way.jpeg", width = 8, height = 4)
-Figure5 <-ggarrange(mgMAOM_3way,propMAOM_3way,nrow=1, common.legend=T, legend="right", labels=c("a","b"))
-ggsave("Figure5.jpeg", width = 20, height = 6, units="cm", dpi=300)
-
-#make pretty
-# Example adjustment for individual plots (modify as necessary)
-mgMAOM_3way <- mgMAOM_3way +
-  theme(legend.text = element_text(size = 6),  # Adjust legend text size
-        legend.title = element_text(size = 8))  # Adjust legend title size
-
-propMAOM_3way <- propMAOM_3way +
-  theme(legend.text = element_text(size = 6),  # Adjust legend text size
-        legend.title = element_text(size = 8))  # Adjust legend title size
-
 
 
 # Create a violin plot with individual data points
@@ -734,3 +680,104 @@ TukeyHSD(field_anova)
 mean_propmaoc <- mean(data$logitpropM, na.rm = TRUE)
 
 print(paste("The mean Prop MAOC is", round(mean_propmaoc, 2), "%"))
+
+#Create a tab_model table 
+library(sjPlot)
+library(nlme)
+install.packages("broom")
+library(broom)
+
+m3P=gls(mgCpergSoilP~ppt.cm*tmeanC
+        +aggregate_stability+active_carbon+ph, 
+        data=data, na.action=na.exclude, method="ML")
+summary(m3P)  
+m3P<-tidy(m3P)
+tab_model(m3P)
+
+m3 = gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+           active_carbon + aggregate_stability,
+         data = data, 
+         na.action = na.exclude, 
+         method = "ML")
+summary(m3)  
+m3<-tidy(m3)
+tab_model(m3)
+
+m4M <- gls(logitpropM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+             active_carbon, 
+           data = data, 
+           na.action = na.exclude, 
+           method = "ML")
+summary(m4M)  
+m4M<-tidy(m4M)
+tab_model(m4M)
+
+
+tab_model(m3P, m3, m4M dv.labels= c("POC", "MAOC", "PropMAOC"), show.reflvl = TRUE, show.aic = TRUE, show.ci = FALSE, show.stat = TRUE, show.fstat = TRUE, show.se = TRUE)
+
+
+# Load necessary libraries
+library(nlme)
+library(sjPlot)
+
+# First model
+m3P <- gls(mgCpergSoilP ~ ppt.cm * tmeanC + aggregate_stability + active_carbon + ph, 
+           data = data, na.action = na.exclude, method = "REML")
+summary(m3P)  # Show model summary
+
+# You can extract the model coefficients manually if needed
+m3P_coef <- coef(m3P)  # Coefficients
+m3P_summary <- summary(m3P)  # Summary of the model
+summary(m3P)
+# Use tab_model to display the model output
+tab_model(m3P)
+
+# Second model
+m3 <- gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+            active_carbon + aggregate_stability,
+          data = data, 
+          na.action = na.exclude, 
+          method = "REML")
+summary(m3)  # Show model summary
+
+# Manually extract coefficients if needed
+m3_coef <- coef(m3)  # Coefficients
+m3_summary <- summary(m3)  # Summary of the model
+
+# Use tab_model to display the model output
+tab_model(m3)
+
+# Third model
+m4M <- gls(logitpropM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+             active_carbon, 
+           data = data, 
+           na.action = na.exclude, 
+           method = "REML")
+summary(m4M)  # Show model summary
+
+# Manually extract coefficients if needed
+m4M_coef <- coef(m4M)  # Coefficients
+m4M_summary <- summary(m4M)  # Summary of the model
+
+# Use tab_model to display the model output
+tab_model(m4M)
+
+# Use tab_model to compare all three models
+tab_model(m3P, m3, m4M, 
+          dv.labels = c("POC", "MAOC", "PropMAOC"), 
+          show.reflvl = TRUE, show.aic = TRUE, show.ci = FALSE, 
+          show.stat = TRUE, show.fstat = TRUE, show.se = TRUE)
+# Save the tab_model output as a PNG file
+png("tabmodel.png", width = 800, height = 600)
+tab_model(m3P, m3, m4M, dv.labels = c("POC", "MAOC", "PropMAOC"), 
+          show.reflvl = TRUE, show.aic = TRUE, show.ci = FALSE, 
+          show.stat = TRUE, show.fstat = TRUE, show.se = TRUE)
+dev.off()  # Close the PNG device
+
+# Save tab_model as HTML
+tab_model(m3P, m3, m4M, 
+          dv.labels = c("POC", "MAOC", "PropMAOC"), 
+          show.reflvl = TRUE, show.aic = TRUE, show.ci = FALSE, 
+          show.stat = TRUE, show.fstat = TRUE, show.se = TRUE,
+          file = "tab_model_output.html")
+    

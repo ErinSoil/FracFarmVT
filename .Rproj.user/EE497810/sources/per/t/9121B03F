@@ -1,6 +1,6 @@
 {
     "id": "9121B03F",
-    "path": "C:/Users/f004spc/Desktop/GitHub/FracFarmVT/fracRcodeMgMAOM.R",
+    "path": "~/GitHub/FracFarmVT/fracRcodeMgMAOM.R",
     "project_path": "fracRcodeMgMAOM.R",
     "type": "r_source",
     "hash": "4016487368",
@@ -13,7 +13,7 @@
         "source_window_id": "",
         "Source": "Source",
         "cursorPosition": "269,0",
-        "scrollLine": "258"
+        "scrollLine": "0"
     },
     "folds": "",
     "lastKnownWriteTime": 1721007442,
