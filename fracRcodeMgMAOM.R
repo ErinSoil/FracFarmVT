@@ -296,6 +296,16 @@ anova(m3)
 n <- nobs(m3)
 print(n)
 
+m3_spatial <- gls(
+  mgCpergSoilM ~ ppt.cm *soil_texture_clay * tmeanC + aggregate_stability + active_carbon,
+  data = data,
+  correlation = corExp(form = ~ Longitude_j + Latitude_j, nugget = TRUE),
+  method = "REML",
+  na.action = na.exclude
+)
+AIC(m3, m3_spatial)
+anova (m3_spatial)
+
 #pseudo R squared calculation (fit between model predicted data and actual data)
 data$mgCpergSoilM.pred=as.vector(fitted(m3))
 R2=lm(mgCpergSoilM~mgCpergSoilM.pred, data=data, na.action=na.omit)
@@ -599,59 +609,66 @@ print(paste("Percent increase in MAOC for a 1% increase in actice carbon is", ro
        data <- data %>%
          mutate(claySilt = soil_texture_clay + soil_texture_silt)
       
-       # Create the plot
-       claySilt_MAOC <- ggplot(data, aes(x = claySilt, y = mgCpergSoilM)) +
-         geom_point(alpha = 0.5) +  # Scatter points
-         stat_smooth(method = "lm", se = TRUE, color = "black") +  # Add linear regression line with confidence intervals
-         labs(x = "Clay and Silt Content (%)",
-              y = expression("mg MAOC g"^-1~"soil")) +  # Y-axis label
-         own_theme +
-         theme_minimal() +  # Minimal theme for aesthetics
-         theme(axis.title.x = element_text(size = 12),  # Increase x-axis label size
-               axis.title.y = element_text(size = 12),  # Increase y-axis label size
-               axis.line = element_line(color = "black"))  # Add axis lines
-      
-       
-              # Add custom lines for expected slope and error margins
-       slope <- 0.86  # Desired slope
-       error_margin <- 0.09  # Error margin for slope
-       
-       # Calculate upper and lower slopes
-       slope_upper <- slope + error_margin
-       slope_lower <- slope - error_margin
-       
-       claySilt_MAOC <- claySilt_MAOC +
-         geom_abline(slope = slope, intercept = 0, color = "red", linetype = "dashed", size = 1.2) +  # Expected slope
-         geom_abline(slope = slope_upper, intercept = 0, color = "blue", linetype = "dotted", size = 1.2) +  # Upper margin line
-         geom_abline(slope = slope_lower, intercept = 0, color = "blue", linetype = "dotted", size = 1.2)  # Lower margin line
-       
-       # Display the plot
-       claySilt_MAOC
-      ######################################TRYING
+      #  # Create the plot
+      #  claySilt_MAOC <- ggplot(data, aes(x = claySilt, y = mgCpergSoilM)) +
+      #    geom_point(alpha = 0.5) +  # Scatter points
+      #    stat_smooth(method = "lm", se = TRUE, color = "black") +  # Add linear regression line with confidence intervals
+      #    labs(x = "Clay and Silt Content (%)",
+      #         y = expression("mg MAOC g"^-1~"soil")) +  # Y-axis label
+      #    own_theme +
+      #    theme_minimal() +  # Minimal theme for aesthetics
+      #    theme(axis.title.x = element_text(size = 12),  # Increase x-axis label size
+      #          axis.title.y = element_text(size = 12),  # Increase y-axis label size
+      #          axis.line = element_line(color = "black"))  # Add axis lines
+      # 
+      #  
+      #         # Add custom lines for expected slope and error margins
+      #  slope <- 0.86  # Desired slope
+      #  error_margin <- 0.09  # Error margin for slope
+      #  
+      #  # Calculate upper and lower slopes
+      #  slope_upper <- slope + error_margin
+      #  slope_lower <- slope - error_margin
+      #  
+      #  claySilt_MAOC <- claySilt_MAOC +
+      #    geom_abline(slope = slope, intercept = 0, color = "red", linetype = "dashed", size = 1.2) +  # Expected slope
+      #    geom_abline(slope = slope_upper, intercept = 0, color = "blue", linetype = "dotted", size = 1.2) +  # Upper margin line
+      #    geom_abline(slope = slope_lower, intercept = 0, color = "blue", linetype = "dotted", size = 1.2)  # Lower margin line
+      #  
+      #  # Display the plot
+      #  claySilt_MAOC
+      # ######################################TRYING
        # Ensure 'AP' is a factor and then map colors to the levels of 'AP'
-       data_clean$AP <- as.factor(data_clean$AP)
-       summary(data_clean$AP)
+       data$AP <- as.factor(data$AP)
+       summary(data$AP)
        # Create a new column 'claySilt' that sums 'soil_texture_clay' and 'soil_texture_silt'
-       data_clean <- data_clean %>%
+       data <- data %>%
          mutate(claySilt = soil_texture_clay + soil_texture_silt)
-     
        
-       # Create the plot with color mapped to 'AP' (Annual/Perennial)
-       claySilt_MAOC <- ggplot(data_clean, aes(x = claySilt, y = mgCpergSoilM, color = AP)) +
+       unique(data$AP)
+       data <- data %>%
+         mutate(AP = case_when(
+           tolower(AP) == "annual" ~ "Annual",
+           tolower(AP) == "perennial" ~ "Perennial",
+           TRUE ~ as.character(AP)
+         ))
+       
+        # Create the plot with color mapped to 'AP' (Annual/Perennial)
+       claySilt_MAOC <- ggplot(data, aes(x = claySilt, y = mgCpergSoilM, color = AP)) +
          geom_point(alpha = 0.5) +  # Scatter points
          stat_smooth(method = "lm", se = TRUE, color = "black") +  # Add linear regression line with confidence intervals
          labs(x = "Clay and Silt Content (%)",
               y = expression("mg MAOC g"^-1~"soil")) +  # Y-axis label
          own_theme +
-         theme_minimal() +  # Minimal theme for aesthetics
-         theme(axis.title.x = element_text(size = 12),  # Increase x-axis label size
-               axis.title.y = element_text(size = 12),  # Increase y-axis label size
+        # theme_minimal() +  # Minimal theme for aesthetics
+         theme(#axis.title.x = element_text(size = 12),  # Increase x-axis label size
+               #axis.title.y = element_text(size = 12),  # Increase y-axis label size
                axis.line = element_line(color = "black"),  # Add axis lines
                legend.title = element_blank(),  # Remove legend title
-               legend.position = "right") +  # Position legend on the right
+               legend.position = c(.2,.85)) +  # Position legend on the right
          scale_color_manual(values = c("Annual" = "#cd853f", "Perennial" = "darkgreen"))  # Custom colors for annual and perennial
        
-     
+       claySilt_MAOC  
        # Add custom lines for expected slope and error margins
        slope <- 0.86  # Desired slope
        error_margin <- 0.09  # Error margin for slope
@@ -670,7 +687,7 @@ print(paste("Percent increase in MAOC for a 1% increase in actice carbon is", ro
        
        #############################END TRY
        
-       ggsave("claySilt_MAOC2.jpeg", width = 4, height = 5,dpi=300)
+       ggsave("FinalFigures/claySilt_MAOCfig6.jpeg", width = 4, height = 3,dpi=600)
         
        # Save the plot 'claySilt_MAOC' as 'claySilt_MAOC2.jpeg'
        ggsave("claySilt_MAOC2.jpeg", plot = claySilt_MAOC, width = 4, height = 5, dpi = 300)

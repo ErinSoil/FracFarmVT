@@ -2,9 +2,11 @@
 
 #setwd("/Users/f003833/Documents/GitHub/FracFarmVT") #caitlin
 setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
-
+setwd("C:/Users/F004SPC/OneDrive-Dartmouth College/Desktop/GitHub/FracFarmVT") #erin
 ##call in the analytical data
 data <- read.csv("data_pH.csv")
+
+install.packages("gmodels")
 
 View(data)
 #load your libraries
@@ -1483,7 +1485,7 @@ m2P=gls(mgCpergSoilP~ppt.cm*tmeanC+soil_texture_clay+
           +aggregate_stability+active_carbon, data=data, na.action=na.exclude, method="ML")
 summary(m2P)
 anova(m1P, m2P)
-
+library(nlme)
 m3P=gls(mgCpergSoilP~ppt.cm*tmeanC
            +aggregate_stability+active_carbon+ph, 
          data=data, na.action=na.exclude, method="ML")
@@ -3717,7 +3719,7 @@ ggsave("SF3_soil_texture_clay.jpeg", plot = SF3, width = 10, height = 6, dpi = 3
 
 
 #revisions looking at the relationship between crop type and climate:
-
+view(data)
 library(ggplot2)
 
 # Temperature by Type
@@ -3784,3 +3786,450 @@ fit_m <- fit.variogram(vgm_m, model = vgm("Sph"))
 
 plot(vgm_p, model = fit_p, main = "Fitted Semivariogram - mgCpergSoilP")
 plot(vgm_m, model = fit_m, main = "Fitted Semivariogram - mgCpergSoilM")
+
+
+##############CREATE TABLE fore revisons#############
+
+# Temperature by Type
+ggplot(data, aes(x = Type.x, y = tmeanC, fill = Type.x)) +
+  geom_boxplot() +
+  labs(x = "Type", y = "Mean Temperature (°C)") +
+  theme_minimal()
+
+# Precipitation by Type
+ggplot(data, aes(x = Type.x, y = ppt.cm, fill = Type.x)) +
+  geom_boxplot() +
+  labs(x = "Type", y = "Precipitation (cm)") +
+  theme_minimal()
+
+# For temperature
+anova_temp <- aov(tmeanC ~ Type.x, data = data)
+summary(anova_temp)
+
+# For precipitation
+anova_ppt <- aov(ppt.cm ~ Type.x, data = data)
+summary(anova_ppt)
+
+TukeyHSD(anova_ppt)
+TukeyHSD(anova_temp)
+
+####Table to respond to revisions################
+
+# Load libraries
+
+library(dplyr)
+library(emmeans)
+library(multcompView)
+responses <- c("tmeanC", "ppt.cm", "aggregate_stability", 
+               "active_carbon", "ph", "overall.score", "soil_texture_clay")
+
+results_list <- list()
+
+for (var in responses) {
+  
+  # Fit ANOVA
+  model <- aov(as.formula(paste(var, "~ Type.x")), data = data)
+  
+  # Mean and range per crop type
+  summary_stats <- data %>%
+    group_by(Type.x) %>%
+    summarise(
+      mean = mean(.data[[var]], na.rm = TRUE),
+      range = paste0(range(.data[[var]], na.rm = TRUE), collapse = "–"),
+      .groups = "drop"
+    )
+  
+  # Tukey HSD
+  tukey <- TukeyHSD(model)
+  
+  # Get significance letters
+  tukey_letters <- multcompView::multcompLetters(tukey$Type.x[, "p adj"])
+  groups_df <- data.frame(
+    Type.x = names(tukey_letters$Letters),
+    .group = tukey_letters$Letters
+  )
+  
+  # Merge
+  result <- summary_stats %>%
+    left_join(groups_df, by = "Type.x") %>%
+    mutate(response = var)
+  
+  results_list[[var]] <- result
+}
+
+# Combine all
+final_results <- bind_rows(results_list)
+print(final_results)
+
+library(dplyr)
+library(tidyr)
+library(knitr)
+
+# Combine mean + range + significance
+final_results_clean <- final_results %>%
+  mutate(
+    mean = round(mean, 2),
+    range = sapply(strsplit(range, "–"), function(x) {
+      paste(round(as.numeric(x), 2), collapse = "–")
+    }),
+    mean_range_sig = paste0(mean, " (", range, ", ", .group, ")")
+  )
+
+# Pivot: one row per variable, one column per crop type
+final_wide <- final_results_clean %>%
+  select(response, `Crop Type` = Type.x, mean_range_sig) %>%
+  pivot_wider(
+    names_from = `Crop Type`,
+    values_from = mean_range_sig
+  ) %>%
+  arrange(response) %>%
+  rename(Variable = response)
+
+# Display nicely
+final_wide %>%
+  kable(caption = "Mean, range, and significance letters by crop type for each variable")
+
+
+library(dplyr)
+library(tidyr)
+library(openxlsx)
+# Step 1: Prepare data
+final_results_clean <- final_results %>%
+  mutate(
+    mean_rounded = round(mean, 2),
+    mean_sig = paste0(mean_rounded, " (", .group, ")")
+  )
+
+# Step 2: Compute overall range per variable
+ranges <- final_results_clean %>%
+  group_by(response) %>%
+  summarise(Full_Range = paste0(round(min(mean), 2), "–", round(max(mean), 2)), .groups = "drop")
+
+# Step 3: Pivot to wide format: rows = Crop Type, columns = Variable
+final_wide <- final_results_clean %>%
+  select(Crop = Type.x, Variable = response, mean_sig) %>%
+  pivot_wider(names_from = Variable, values_from = mean_sig)
+
+# Step 4: Create a proper data frame for the range row
+range_row <- data.frame(Crop = "Full Range", t(ranges$Full_Range))
+names(range_row)[-1] <- ranges$response
+
+# Step 5: Bind the range row on top of the crop rows
+final_wide <- bind_rows(range_row, final_wide)
+
+# Now you can continue with writing to Excel and coloring
+
+
+# Step 4: Create workbook and write data
+wb <- createWorkbook()
+addWorksheet(wb, "Summary")
+
+writeData(wb, "Summary", final_wide, startCol = 1, startRow = 1)
+
+# Step 5: Define colors for letters
+letters_colors <- c(
+  "a" = "#D6EAF8",  # light blue
+  "b" = "#F9E79F",  # light yellow
+  "c" = "#F5B7B1",  # light red
+  "ab" = "#D5F5E3", # light green
+  "ac" = "#FADBD8", # light pink
+  "bc" = "#FCF3CF"  # light cream
+)
+
+# Step 6: Apply coloring based on letters in each cell
+for(col in 2:ncol(final_wide)) {  # skip first column (Crop)
+  for(row in 2:nrow(final_wide)) {  # skip first row (range row)
+    cell_val <- final_wide[row, col] %>% as.character()
+    if(!is.na(cell_val) && grepl("\\(", cell_val)) {
+      # Extract letters from cell
+      letter <- sub(".*\\((.*)\\)", "\\1", cell_val)
+      # If multiple letters, choose first for color (optional)
+      first_letter <- strsplit(letter, "")[[1]][1]
+      color <- letters_colors[first_letter]
+      if(!is.na(color)) {
+        addStyle(wb, "Summary",
+                 style = createStyle(fgFill = color),
+                 rows = row+1, cols = col, gridExpand = TRUE)
+      }
+    }
+  }
+}
+
+# Step 7: Save workbook
+saveWorkbook(wb, "CropType_as_Rows_Colored.xlsx", overwrite = TRUE)
+
+###revised code
+# Load libraries
+library(dplyr)
+library(emmeans)
+library(multcompView)
+library(tidyr)
+library(openxlsx)
+library(knitr)
+
+responses <- c("tmeanC", "ppt.cm", "aggregate_stability", 
+               "active_carbon", "ph", "overall.score", "soil_texture_clay")
+
+results_list <- list()
+
+for (var in responses) {
+  
+  # Fit ANOVA
+  model <- aov(as.formula(paste(var, "~ Type.x")), data = data)
+  
+  # Mean, range, SEM per crop type
+  summary_stats <- data %>%
+    group_by(Type.x) %>%
+    summarise(
+      mean = mean(.data[[var]], na.rm = TRUE),
+      sem  = sd(.data[[var]], na.rm = TRUE) / sqrt(sum(!is.na(.data[[var]]))),
+      range = paste0(range(.data[[var]], na.rm = TRUE), collapse = "–"),
+      .groups = "drop"
+    )
+  
+  # Tukey HSD
+  tukey <- TukeyHSD(model)
+  
+  # Get significance letters
+  tukey_letters <- multcompView::multcompLetters(tukey$Type.x[, "p adj"])
+  groups_df <- data.frame(
+    Type.x = names(tukey_letters$Letters),
+    .group = tukey_letters$Letters
+  )
+  
+  # Merge
+  result <- summary_stats %>%
+    left_join(groups_df, by = "Type.x") %>%
+    mutate(response = var)
+  
+  results_list[[var]] <- result
+}
+
+# Combine all
+final_results <- bind_rows(results_list)
+
+# Clean + prepare display
+final_results_clean <- final_results %>%
+  mutate(
+    mean_rounded = round(mean, 2),
+    sem_rounded  = round(sem, 2),
+    # Include SEM + significance in parentheses
+    mean_sem_sig = paste0(mean_rounded, " ±", sem_rounded, " (", .group, ")")
+  )
+
+# Compute overall range per variable
+ranges <- final_results_clean %>%
+  group_by(response) %>%
+  summarise(Full_Range = paste0(round(min(mean), 2), "–", round(max(mean), 2)), 
+            .groups = "drop")
+
+# Pivot to wide format
+final_wide <- final_results_clean %>%
+  select(Crop = Type.x, Variable = response, mean_sem_sig) %>%
+  pivot_wider(names_from = Variable, values_from = mean_sem_sig)
+
+# Add range row
+range_row <- data.frame(Crop = "Full Range", t(ranges$Full_Range))
+names(range_row)[-1] <- ranges$response
+final_wide <- bind_rows(range_row, final_wide)
+
+# Write to Excel
+wb <- createWorkbook()
+addWorksheet(wb, "Summary")
+writeData(wb, "Summary", final_wide, startCol = 1, startRow = 1)
+
+# Colors for significance letters
+letters_colors <- c(
+  "a" = "#D6EAF8",
+  "b" = "#F9E79F",
+  "c" = "#F5B7B1",
+  "ab" = "#D5F5E3",
+  "ac" = "#FADBD8",
+  "bc" = "#FCF3CF"
+)
+
+# Apply coloring
+for(col in 2:ncol(final_wide)) {  # skip Crop column
+  for(row in 2:nrow(final_wide)) {  # skip range row
+    cell_val <- as.character(final_wide[row, col])
+    if(!is.na(cell_val) && grepl("\\(", cell_val)) {
+      # Extract significance letters
+      letter <- sub(".*\\((.*)\\)", "\\1", cell_val)
+      first_letter <- strsplit(letter, "")[[1]][1]
+      color <- letters_colors[first_letter]
+      if(!is.na(color)) {
+        addStyle(wb, "Summary",
+                 style = createStyle(fgFill = color),
+                 rows = row+1, cols = col, gridExpand = TRUE)
+      }
+    }
+  }
+}
+
+saveWorkbook(wb, "CropType_as_Rows_Colored_SEM.xlsx", overwrite = TRUE)
+
+###########Adjusted Script #############
+responses <- c("tmeanC", "ppt.cm", "aggregate_stability", 
+               "active_carbon", "ph", "overall.score", "soil_texture_clay")
+
+results_list <- list()
+
+# Filter data once at the start to exclude Field crop
+data_filtered <- data %>% filter(Type.x != "Field crops")
+
+for (var in responses) {
+  
+  # Fit ANOVA
+  model <- aov(as.formula(paste(var, "~ Type.x")), data = data_filtered)
+  
+  # Mean, SEM, Range per crop type
+  summary_stats <- data_filtered %>%
+    group_by(Type.x) %>%
+    summarise(
+      mean  = mean(.data[[var]], na.rm = TRUE),
+      sem   = sd(.data[[var]], na.rm = TRUE) / sqrt(sum(!is.na(.data[[var]]))),
+      range = paste0(round(min(.data[[var]], na.rm = TRUE), 2), "–",
+                     round(max(.data[[var]], na.rm = TRUE), 2)),
+      .groups = "drop"
+    )
+  
+  # Tukey HSD
+  tukey <- TukeyHSD(model)
+  
+  # Get significance letters
+  tukey_letters <- multcompView::multcompLetters(tukey$Type.x[, "p adj"])
+  groups_df <- data.frame(
+    Type.x = names(tukey_letters$Letters),
+    .group = tukey_letters$Letters
+  )
+  
+  # Merge
+  result <- summary_stats %>%
+    left_join(groups_df, by = "Type.x") %>%
+    mutate(response = var)
+  
+  results_list[[var]] <- result
+}
+
+# Combine all
+final_results <- bind_rows(results_list)
+
+# Add cleaned formatting
+final_results_clean <- final_results %>%
+  mutate(
+    mean_rounded = round(mean, 2),
+    sem_rounded  = round(sem, 2),
+    mean_sem_sig = paste0(mean_rounded, " ±", sem_rounded, " (", .group, ")"),
+    mean_range   = paste0(mean_sem_sig, " | Range: ", range)
+  )
+
+# Pivot to wide format with range included
+final_wide <- final_results_clean %>%
+  select(Crop = Type.x, Variable = response, mean_range) %>%
+  pivot_wider(names_from = Variable, values_from = mean_range)
+
+# Write to Excel
+wb <- createWorkbook()
+addWorksheet(wb, "Summary")
+writeData(wb, "Summary", final_wide, startCol = 1, startRow = 1)
+
+# Colors for significance letters
+letters_colors <- c(
+  "a" = "#D6EAF8",
+  "b" = "#F9E79F",
+  "c" = "#F5B7B1",
+  "ab" = "#D5F5E3",
+  "ac" = "#FADBD8",
+  "bc" = "#FCF3CF"
+
+
+# Apply coloring based on first letter
+for(col in 2:ncol(final_wide)) {  # skip Crop column
+  for(row in 2:nrow(final_wide)) {
+    cell_val <- as.character(final_wide[row, col])
+    if(!is.na(cell_val) && grepl("\\(", cell_val)) {
+      # Extract significance letters
+      letter <- sub(".*\\((.*)\\).*", "\\1", cell_val)
+      first_letter <- strsplit(letter, "")[[1]][1]
+      color <- letters_colors[first_letter]
+      if(!is.na(color)) {
+        addStyle(wb, "Summary",
+                 style = createStyle(fgFill = color),
+                 rows = row+1, cols = col, gridExpand = TRUE)
+      }
+    }
+  }
+}
+
+saveWorkbook(wb, "CropType_as_Rows_Colored_SEM_with_Range.xlsx", overwrite = TRUE)
+
+
+#revisions model code to add variance structure ##
+
+m3P=gls(mgCpergSoilP~ppt.cm*tmeanC
+        +aggregate_stability+active_carbon+ph,
+        data=data, na.action=na.exclude, method="REML") 
+
+m3P_var <- gls(mgCpergSoilP ~ ppt.cm * tmeanC
+               + aggregate_stability + active_carbon + ph + Type.x,
+               data = data,
+               na.action = na.exclude,
+               method = "REML",
+               weights = varIdent(form = ~ 1 | Type.x))
+
+anova(m3P)
+summary(m3P)
+###MAOC
+m4M_var <- gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+               aggregate_stability + active_carbon + ph,
+               data = data,
+               na.action = na.exclude,
+               method = "REML",
+               weights = varIdent(form = ~ 1 | Type.x))
+
+anova(m4M_var)
+summary(m4M_var)
+
+summary(m3P_var)
+###MAOC
+m4M <- gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+                 aggregate_stability + active_carbon + ph,
+               data = data,
+               na.action = na.exclude,
+               method = "REML")
+
+anova(m4M)
+summary(m4M)
+# Load needed packages
+install.packages("MuMIn")
+install.packages("performance")
+library(MuMIn)       # for r.squaredGLS
+library(performance) # for r2() function, if you prefer
+
+## --- R2 for GLS models ---
+# Using MuMIn
+r.squaredGLS(m3P)       # marginal pseudo-R²
+r.squaredGLS(m3P_var)
+r.squaredGLS(m4M_var)
+
+# Or using performance package (often more flexible)
+r2(m3P)
+r2(m3P_var)
+r2(m4M_var)
+
+## --- Degrees of freedom ---
+# Number of parameters (coefficients)
+length(coef(m3P))
+length(coef(m3P_var))
+length(coef(m4M_var))
+
+# Residual degrees of freedom = n - p
+df_resid_m3P     <- m3P$dims$N - length(coef(m3P))
+df_resid_m3P_var <- m3P_var$dims$N - length(coef(m3P_var))
+df_resid_m4M_var <- m4M_var$dims$N - length(coef(m4M_var))
+
+
+df_resid_m3P_var
+df_resid_m4M_var
+
+AIC(m3P, m3P_var)
