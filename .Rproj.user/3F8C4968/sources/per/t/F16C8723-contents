@@ -5,8 +5,7 @@ setwd("C:/Users/F004SPC/Documents/GitHub/FracFarmVT") #erin
 setwd("C:/Users/F004SPC/OneDrive-Dartmouth College/Desktop/GitHub/FracFarmVT") #erin
 ##call in the analytical data
 data <- read.csv("data_pH.csv")
-
-install.packages("gmodels")
+Frac23<- read.csv("Frac23.csv")
 
 View(data)
 #load your libraries
@@ -2322,6 +2321,66 @@ data <- data %>%
                                               "7-9 inch Till", 
                                               ">9 inch Till")))
 
+# Filter perennial crops (hay + pasture)
+perennial_data <- data %>%
+  filter(Type.x %in% c("Hay"))
+
+# Calculate % that are no-till
+percent_no_till <- perennial_data %>%
+  summarize(
+    pct_no_till = mean(Tillage_1to4 == "1", na.rm = TRUE) * 100
+  )
+
+percent_no_till
+
+# Filter hay fields
+hay_data <- data %>%
+  filter(Type.x %in% c("Hay"))
+
+# Percentage of no-till (Tillage_1to4 == "1")
+percent_no_till <- hay_data %>%
+  summarize(
+    pct_no_till = mean(Tillage_1to4 == 1, na.rm = TRUE) * 100
+  )
+
+percent_no_till
+
+# Filter hay fields
+hay_data <- data %>%
+  filter(Type.x %in% c("Hay"))
+
+# Percentage of no-till (Tillage_1to4 == "1")
+percent_no_till <- hay_data %>%
+  summarize(
+    pct_no_till = mean(Tillage_1to4 == 1, na.rm = TRUE) * 100
+  )
+
+percent_no_till
+
+# 🔢 Count of fields in each tillage category
+tillage_counts <- hay_data %>%
+  count(Tillage_1to4)
+
+tillage_counts
+hay_data %>%
+  group_by(Tillage_1to4) %>%
+  summarise(
+    Fields = list(Field_Code),
+    .groups = "drop"
+  )
+
+View(
+  hay_data %>%
+    group_by(Tillage_1to4) %>%
+    summarise(
+      Fields = list(Field_Code),
+      .groups = "drop"
+    )
+)
+
+
+
+
 
 
 # Check the new column
@@ -4069,99 +4128,250 @@ for(col in 2:ncol(final_wide)) {  # skip Crop column
 saveWorkbook(wb, "CropType_as_Rows_Colored_SEM.xlsx", overwrite = TRUE)
 
 ###########Adjusted Script #############
+library(nlme)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(dplyr)
+library(tidyr)
+library(openxlsx)
+# Load libraries
+library(nlme)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(dplyr)
+library(tidyr)
+library(openxlsx)
+
+# Response variables
 responses <- c("tmeanC", "ppt.cm", "aggregate_stability", 
                "active_carbon", "ph", "overall.score", "soil_texture_clay")
 
-results_list <- list()
+# Filter data once and convert Type.x to factor
+data_filtered <- data %>%
+  filter(Type.x != "Field crops") %>%
+  mutate(Type.x = factor(Type.x))
 
-# Filter data once at the start to exclude Field crop
-data_filtered <- data %>% filter(Type.x != "Field crops")
+results_list <- list()
 
 for (var in responses) {
   
-  # Fit ANOVA
-  model <- aov(as.formula(paste(var, "~ Type.x")), data = data_filtered)
+  # 1️⃣ Fit GLS model with variance structure
+  model <- gls(as.formula(paste(var, "~ Type.x")),
+               data = data_filtered,
+               method = "REML",
+               weights = varIdent(form = ~1 | Type.x),
+               na.action = na.exclude)
   
-  # Mean, SEM, Range per crop type
-  summary_stats <- data_filtered %>%
-    group_by(Type.x) %>%
-    summarise(
-      mean  = mean(.data[[var]], na.rm = TRUE),
-      sem   = sd(.data[[var]], na.rm = TRUE) / sqrt(sum(!is.na(.data[[var]]))),
-      range = paste0(round(min(.data[[var]], na.rm = TRUE), 2), "–",
-                     round(max(.data[[var]], na.rm = TRUE), 2)),
-      .groups = "drop"
-    )
+  # 2️⃣ Estimated marginal means
+  emm <- emmeans(model, specs = "Type.x", mode = "df.error")
   
-  # Tukey HSD
-  tukey <- TukeyHSD(model)
+  # 3️⃣ Tukey pairwise comparisons via glht
+  tukey <- glht(model, linfct = mcp(Type.x = "Tukey"))
+  tukey_sum <- summary(tukey)
   
-  # Get significance letters
-  tukey_letters <- multcompView::multcompLetters(tukey$Type.x[, "p adj"])
-  groups_df <- data.frame(
-    Type.x = names(tukey_letters$Letters),
-    .group = tukey_letters$Letters
-  )
+  # 4️⃣ Named p-values for multcompLetters
+  pvals_named <- tukey_sum$test$pvalues
+  names(pvals_named) <- rownames(tukey_sum$linfct)
   
-  # Merge
-  result <- summary_stats %>%
-    left_join(groups_df, by = "Type.x") %>%
+  # 5️⃣ Generate compact letters
+  letters_vec <- multcompLetters(pvals_named)$Letters
+  letters_df <- data.frame(Type.x = names(letters_vec), .group = letters_vec)
+  
+  # 6️⃣ Summary table: mean, SE, range, letters
+  summary_stats <- as.data.frame(emm)[, c("Type.x", "emmean", "SE")]
+  colnames(summary_stats) <- c("Type.x", "mean", "SE")
+  
+  summary_stats <- summary_stats %>%
+    mutate(
+      range = paste0(
+        round(tapply(data_filtered[[var]], data_filtered$Type.x, min, na.rm = TRUE), 2), "–",
+        round(tapply(data_filtered[[var]], data_filtered$Type.x, max, na.rm = TRUE), 2)
+      )
+    ) %>%
+    left_join(letters_df, by = "Type.x") %>%
     mutate(response = var)
   
-  results_list[[var]] <- result
+  results_list[[var]] <- summary_stats
 }
 
-# Combine all
+# 7️⃣ Combine all variables
 final_results <- bind_rows(results_list)
 
-# Add cleaned formatting
+# 8️⃣ Format columns
 final_results_clean <- final_results %>%
   mutate(
     mean_rounded = round(mean, 2),
-    sem_rounded  = round(sem, 2),
-    mean_sem_sig = paste0(mean_rounded, " ±", sem_rounded, " (", .group, ")"),
-    mean_range   = paste0(mean_sem_sig, " | Range: ", range)
+    SE_rounded   = round(SE, 2),
+    mean_SE_sig  = paste0(mean_rounded, " ± ", SE_rounded, " (", .group, ")"),
+    mean_range   = paste0(mean_SE_sig, " | Range: ", range)
   )
 
-# Pivot to wide format with range included
+# 9️⃣ Pivot to wide format
 final_wide <- final_results_clean %>%
-  select(Crop = Type.x, Variable = response, mean_range) %>%
+  dplyr::select(Crop = Type.x, Variable = response, mean_range) %>%
   pivot_wider(names_from = Variable, values_from = mean_range)
 
-# Write to Excel
+# 🔟 Write to Excel
 wb <- createWorkbook()
 addWorksheet(wb, "Summary")
 writeData(wb, "Summary", final_wide, startCol = 1, startRow = 1)
+saveWorkbook(wb, "CropType_Table.xlsx", overwrite = TRUE)
+# Load libraries
+library(nlme)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(dplyr)
+library(tidyr)
+library(openxlsx)
 
-# Colors for significance letters
-letters_colors <- c(
-  "a" = "#D6EAF8",
-  "b" = "#F9E79F",
-  "c" = "#F5B7B1",
-  "ab" = "#D5F5E3",
-  "ac" = "#FADBD8",
-  "bc" = "#FCF3CF"
+ 
+  # Pre-filter NAs for current variable
+  data_var <- data_filtered %>% filter(!is.na(.data[[var]]))
+  
+  # Skip variable if less than 2 levels remain
+  if(length(unique(data_var$Type.x)) < 2) next
+  
+  # 1️⃣ Fit GLS model with variance structure
+  model <- gls(as.formula(paste(var, "~ Type.x")),
+               data = data_var,
+               method = "REML",
+               weights = varIdent(form = ~1 | Type.x),
+               na.action = na.exclude)
+  
+  # 2️⃣ Estimated marginal means
+  emm <- emmeans(model, specs = "Type.x", mode = "df.error")
+  
+  # 3️⃣ Tukey pairwise comparisons via glht
+  tukey <- glht(model, linfct = mcp(Type.x = "Tukey"))
+  tukey_sum <- summary(tukey)
+  
+  
+  # 4️⃣ Named p-values for letters
+  pvals_named <- tukey_sum$test$pvalues
+  names(pvals_named) <- rownames(tukey_sum$linfct)
+  
+  # 5️⃣ Generate compact letters safely
+  if(length(pvals_named) > 0 && !all(is.na(pvals_named))) {
+    letters_vec <- multcompLetters(pvals_named)$Letters
+    letters_df <- data.frame(Type.x = names(letters_vec), .group = letters_vec)
+  } else {
+    letters_df <- data.frame(Type.x = levels(data_var$Type.x), .group = NA)
+  }
+  
+  # 6️⃣ Summary table: mean, SE, range, letters
+  summary_stats <- as.data.frame(emm)[, c("Type.x", "emmean", "SE")]
+  colnames(summary_stats) <- c("Type.x", "mean", "SE")
+  
+  summary_stats <- summary_stats %>%
+    mutate(
+      range = paste0(
+        round(tapply(data_var[[var]], data_var$Type.x, min, na.rm = TRUE), 2), "–",
+        round(tapply(data_var[[var]], data_var$Type.x, max, na.rm = TRUE), 2)
+      )
+    ) %>%
+    left_join(letters_df, by = "Type.x") %>%
+    mutate(response = var)
+  
+  results_list[[var]] <- summary_stats
+}
+
+# 7️⃣ Combine all variables
+final_results <- bind_rows(results_list)
+
+# 8️⃣ Format columns
+final_results_clean <- final_results %>%
+  mutate(
+    mean_rounded = round(mean, 2),
+    SE_rounded   = round(SE, 2),
+    mean_SE_sig  = paste0(mean_rounded, " ± ", SE_rounded, " (", .group, ")"),
+    mean_range   = paste0(mean_SE_sig, " | Range: ", range)
+  )
+
+# 9️⃣ Pivot to wide format
+final_wide <- final_results_clean %>%
+  dplyr::select(Crop = Type.x, Variable = response, mean_range) %>%
+  pivot_wider(names_from = Variable, values_from = mean_range)
+
+# 🔟 Write to Excel
+wb <- createWorkbook()
+addWorksheet(wb, "Summary")
+writeData(wb, "Summary", final_wide, startCol = 1, startRow = 1)
+saveWorkbook(wb, "CropType_Tablev20.xlsx", overwrite = TRUE)
+
+# Response variables
 
 
-# Apply coloring based on first letter
-for(col in 2:ncol(final_wide)) {  # skip Crop column
-  for(row in 2:nrow(final_wide)) {
-    cell_val <- as.character(final_wide[row, col])
-    if(!is.na(cell_val) && grepl("\\(", cell_val)) {
-      # Extract significance letters
-      letter <- sub(".*\\((.*)\\).*", "\\1", cell_val)
-      first_letter <- strsplit(letter, "")[[1]][1]
-      color <- letters_colors[first_letter]
-      if(!is.na(color)) {
-        addStyle(wb, "Summary",
-                 style = createStyle(fgFill = color),
-                 rows = row+1, cols = col, gridExpand = TRUE)
-      }
-    }
+
+
+responses <- c("tmeanC", "ppt.cm", "aggregate_stability", 
+               "active_carbon", "ph", "overall.score", "soil_texture_clay")
+
+# Filter data once and convert Type.x to factor
+data_filtered <- data %>%
+  filter(Type.x != "Field crops") %>%
+  mutate(Type.x = factor(Type.x))
+
+results_list <- list()
+
+for (var in responses) {
+ 
+###########################################
+#new tble with signif diff
+library(nlme)
+library(emmeans)
+library(dplyr)
+library(tidyr)
+
+# Filter data and convert Type.x to factor
+data_filtered <- data %>%
+  filter(Type.x != "Field crops") %>%
+  mutate(Type.x = factor(Type.x))
+
+responses <- c("tmeanC", "ppt.cm", "aggregate_stability", 
+               "active_carbon", "ph", "overall.score", "soil_texture_clay")
+
+sig_list <- list()
+
+for(var in responses){
+  
+  # Pre-filter NAs
+  data_var <- data_filtered %>% filter(!is.na(.data[[var]]))
+  
+  if(length(unique(data_var$Type.x)) < 2) next
+  
+  # Fit GLS with variance structure
+  model <- gls(as.formula(paste(var, "~ Type.x")),
+               data = data_var,
+               method = "REML",
+               weights = varIdent(form = ~1 | Type.x),
+               na.action = na.exclude)
+  
+  # Estimated marginal means
+  emm <- emmeans(model, specs = "Type.x", mode = "df.error")
+  
+  # Tukey pairwise comparisons
+  pw <- pairs(emm, adjust = "tukey") %>% summary()
+  
+  # Keep only significant comparisons (p < 0.05)
+  sig_pw <- pw %>% as.data.frame() %>% filter(p.value < 0.05)
+  
+  if(nrow(sig_pw) > 0){
+    sig_pw$response <- var
+    sig_list[[var]] <- sig_pw
   }
 }
 
-saveWorkbook(wb, "CropType_as_Rows_Colored_SEM_with_Range.xlsx", overwrite = TRUE)
+# Combine all significant pairwise differences
+sig_differences <- bind_rows(sig_list)
+
+# View results
+sig_differences
+############################
+
+
 
 
 #revisions model code to add variance structure ##
@@ -4171,65 +4381,1238 @@ m3P=gls(mgCpergSoilP~ppt.cm*tmeanC
         data=data, na.action=na.exclude, method="REML") 
 
 m3P_var <- gls(mgCpergSoilP ~ ppt.cm * tmeanC
-               + aggregate_stability + active_carbon + ph + Type.x,
+               + aggregate_stability + active_carbon + ph,
                data = data,
                na.action = na.exclude,
                method = "REML",
                weights = varIdent(form = ~ 1 | Type.x))
 
-anova(m3P)
+anova(m3P_var)
+
+# Example GLS with heterogeneous variances by crop type
+m3P_gls <- gls(
+  m3P,
+  data = data,
+  weights = varIdent(form = ~ 1 | Type.x)
+)
 summary(m3P)
 ###MAOC
-m4M_var <- gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
-               aggregate_stability + active_carbon + ph,
+m4M <- gls(logitpropM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+             active_carbon, 
+           data = data, 
+           na.action = na.exclude, 
+           method = "ML")
+
+
+m4M_var <- gls(logitpropM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+                 active_carbon,
                data = data,
                na.action = na.exclude,
                method = "REML",
                weights = varIdent(form = ~ 1 | Type.x))
 
 anova(m4M_var)
-summary(m4M_var)
 
-summary(m3P_var)
-###MAOC
-m4M <- gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
-                 aggregate_stability + active_carbon + ph,
+# Example GLS with heterogeneous variances by crop type
+m4M_gls <- gls(
+  m4M,
+  data = data,
+  weights = varIdent(form = ~ 1 | Type.x)
+)
+summary(m4M)
+
+m3P_var <- gls(mgCpergSoilP ~ ppt.cm * tmeanC
+               + aggregate_stability + active_carbon + ph,
+               data = data,
+               na.action = na.exclude,
+               method = "REML",
+               weights = varIdent(form = ~ 1 | Type.x))
+
+anova(m3P_var)
+
+# Example GLS with heterogeneous variances by crop type
+m3P_gls <- gls(
+  m3P,
+  data = data,
+  weights = varIdent(form = ~ 1 | Type.x)
+)
+summary(m3P)
+
+##Cleanedup Revised Code
+
+library(nlme)
+library(dplyr)
+
+# Base model (homogeneous variance)
+m3P <- gls(
+  mgCpergSoilP ~ ppt.cm * tmeanC + aggregate_stability + active_carbon + ph,
+  data = data,
+  na.action = na.exclude,
+  method = "REML"
+)
+
+# Model with heterogeneous variance by Type.x
+m3P_var <- gls(
+  mgCpergSoilP ~ ppt.cm * tmeanC + aggregate_stability + active_carbon + ph,
+  data = data,
+  na.action = na.exclude,
+  method = "REML",
+  weights = varIdent(form = ~ 1 | Type.x)
+)
+
+# Extract coefficient tables
+coef_base <- summary(m3P)$tTable %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("term") %>%
+  rename_with(~paste0(.x, "_base"), -term)
+
+coef_var <- summary(m3P_var)$tTable %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("term") %>%
+  rename_with(~paste0(.x, "_var"), -term)
+
+# Combine side-by-side
+comparison <- full_join(coef_base, coef_var, by = "term")
+
+# Show results
+comparison
+
+coef_base <- summary(m3P)$tTable
+coef_var  <- summary(m3P_var)$tTable
+
+sig_diff <- data.frame(
+  term = rownames(coef_base),
+  sig_base = coef_base[, "p-value"] < 0.05,
+  sig_var  = coef_var[, "p-value"] < 0.05
+)
+
+# Add a column that tells if significance status changed
+sig_diff$changed <- sig_diff$sig_base != sig_diff$sig_var
+sig_diff
+#####variance structures
+
+library(emmeans)
+library(dplyr)
+
+modelP <- gls(mgCpergSoilP ~ Type.x,
+               data = data,
+               na.action = na.exclude,
+               method = "REML",
+               weights = varIdent(form = ~ 1 | Type.x))
+
+modelP2 <- gls(mgCpergSoilP ~ Type.x,
+              data = data,
+              na.action = na.exclude,
+              method = "REML")
+anova (modelP, modelP2)
+
+class(data)
+
+
+emm <- emmeans(modelP2, specs = "Type.x", mode = "df.error")
+emm
+
+
+# Table of estimated means with SE
+emm_table <- as.data.frame(emm) %>%
+  select(Type.x = Type.x, mean_POC = emmean, SE = SE)
+emm_table
+
+# Pairwise comparisons (Tukey-adjusted)
+pairs(emm, adjust = "tukey")
+
+
+
+
+
+modelMprop <- gls(propM~ Type.x,
+              data = data,
+              na.action = na.exclude,
+              method = "REML",
+              weights = varIdent(form = ~ 1 | Type.x))
+
+modelM2prop<- gls(propM ~ Type.x,
                data = data,
                na.action = na.exclude,
                method = "REML")
+anova (modelMprop, modelM2prop)
 
-anova(m4M)
-summary(m4M)
-# Load needed packages
-install.packages("MuMIn")
-install.packages("performance")
-library(MuMIn)       # for r.squaredGLS
-library(performance) # for r2() function, if you prefer
-
-## --- R2 for GLS models ---
-# Using MuMIn
-r.squaredGLS(m3P)       # marginal pseudo-R²
-r.squaredGLS(m3P_var)
-r.squaredGLS(m4M_var)
-
-# Or using performance package (often more flexible)
-r2(m3P)
-r2(m3P_var)
-r2(m4M_var)
-
-## --- Degrees of freedom ---
-# Number of parameters (coefficients)
-length(coef(m3P))
-length(coef(m3P_var))
-length(coef(m4M_var))
-
-# Residual degrees of freedom = n - p
-df_resid_m3P     <- m3P$dims$N - length(coef(m3P))
-df_resid_m3P_var <- m3P_var$dims$N - length(coef(m3P_var))
-df_resid_m4M_var <- m4M_var$dims$N - length(coef(m4M_var))
+class(data)
 
 
-df_resid_m3P_var
-df_resid_m4M_var
+emm <- emmeans(modelP2, specs = "Type.x", mode = "df.error")
+emm
 
-AIC(m3P, m3P_var)
+
+# Table of estimated means with SE
+emm_table <- as.data.frame(emm) %>%
+  select(Type.x = Type.x, mean_POC = emmean, SE = SE)
+emm_table
+
+# Pairwise comparisons (Tukey-adjusted)
+pairs(emm, adjust = "tukey")
+
+
+################Spatial stuff
+# Install and load required packages
+install.packages(c("nlme", "gstat", "sp"))
+library(nlme)
+library(gstat)
+library(sp)
+
+# Your GLS model
+m3P <- gls(mgCpergSoilP ~ ppt.cm * tmeanC +
+             aggregate_stability + active_carbon + ph,
+           data = data, 
+           na.action = na.exclude, 
+           method = "REML")
+
+# 1️⃣ Extract standardized residuals
+data$resid_std <- resid(m3P, type = "normalized")
+
+# 2️⃣ Create a data frame with residuals and coordinates
+resid_df <- data.frame(
+  Longitude = data$Longitude,
+  Latitude = data$Latitude,
+  resid_std = data$resid_std
+)
+
+# Remove missing coordinates (if any)
+resid_df <- na.omit(resid_df)
+
+# 3️⃣ Add a color column: black for negative, grey for positive
+resid_df$col <- ifelse(resid_df$resid_std < 0, "black", "grey70")
+
+# 3️⃣ Set spatial coordinates
+coordinates(resid_df) <- ~ Longitude + Latitude
+
+# 4️⃣ Define color scheme: black = negative, grey = positive residuals
+#col_vec <- ifelse(resid_df$resid_std < 0, "black", "grey70")
+
+# 5️⃣ Bubble plot of standardized residuals
+bubble(
+  resid_df,
+  "resid_std",
+  col = col_vec,
+  main = "Spatial Distribution of Standardized Residuals",
+  xlab = "Longitude",
+  ylab = "Latitude"
+)
+library(ggplot2)
+
+# Create a ggplot-compatible dataframe
+resid_df <- data.frame(
+  Longitude = data$Longitude,
+  Latitude = data$Latitude,
+  resid_std = resid(m3P, type = "normalized")
+)
+resid_df <- na.omit(resid_df)
+
+# ggplot bubble plot
+ggplot(resid_df, aes(x = Longitude, y = Latitude)) +
+  geom_point(aes(size = abs(resid_std),
+                 fill = ifelse(resid_std > 0, "Positive", "Negative")),
+             shape = 21, color = "black", alpha = 0.8) +
+  scale_fill_manual(values = c("Negative" = "black", "Positive" = "grey70")) +
+  scale_size_continuous(name = "|Standardized residual|") +
+  labs(title = "Spatial Distribution of Standardized Residuals",
+       x = "Longitude", y = "Latitude", fill = "Residual sign") +
+  theme_bw()
+##########MAOC
+m3 = gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+           active_carbon + aggregate_stability,
+         data = data, 
+         na.action = na.exclude, 
+         method = "REML")
+
+
+# 1️⃣ Extract standardized residuals
+data$resid_std <- resid(m3, type = "normalized")
+
+# 2️⃣ Create a data frame with residuals and coordinates
+resid_df <- data.frame(
+  Longitude = data$Longitude,
+  Latitude = data$Latitude,
+  resid_std = data$resid_std
+)
+
+# Remove missing coordinates (if any)
+resid_df <- na.omit(resid_df)
+
+# 3️⃣ Add a color column: black for negative, grey for positive
+resid_df$col <- ifelse(resid_df$resid_std < 0, "black", "grey70")
+
+# 3️⃣ Set spatial coordinates
+coordinates(resid_df) <- ~ Longitude + Latitude
+
+# 4️⃣ Define color scheme: black = negative, grey = positive residuals
+#col_vec <- ifelse(resid_df$resid_std < 0, "black", "grey70")
+
+# 5️⃣ Bubble plot of standardized residuals
+bubble(
+  resid_df,
+  "resid_std",
+  col = col_vec,
+  main = "Spatial Distribution of Standardized Residuals",
+  xlab = "Longitude",
+  ylab = "Latitude"
+)
+library(ggplot2)
+
+# Create a ggplot-compatible dataframe
+resid_df <- data.frame(
+  Longitude = data$Longitude,
+  Latitude = data$Latitude,
+  resid_std = resid(m3, type = "normalized")
+)
+resid_df <- na.omit(resid_df)
+
+# ggplot bubble plot
+ggplot(resid_df, aes(x = Longitude, y = Latitude)) +
+  geom_point(aes(size = abs(resid_std),
+                 fill = ifelse(resid_std > 0, "Positive", "Negative")),
+             shape = 21, color = "black", alpha = 0.8) +
+  scale_fill_manual(values = c("Negative" = "black", "Positive" = "grey70")) +
+  scale_size_continuous(name = "|Standardized residual|") +
+  labs(title = "Spatial Distribution of Standardized Residuals",
+       x = "Longitude", y = "Latitude", fill = "Residual sign") +
+  theme_bw()
+
+library(nlme)
+
+# Exponential spatial correlation
+m3P_exp <- gls(mgCpergSoilP ~ ppt.cm * tmeanC +
+                 aggregate_stability + active_carbon + ph,
+               data = data,
+               correlation = corExp(form = ~ Longitude + Latitude, nugget = TRUE),
+               na.action = na.exclude,
+               method = "REML")
+
+# Gaussian spatial correlation
+m3P_gaus <- update(m3P_exp, correlation = corGaus(form = ~ Longitude + Latitude, nugget = TRUE))
+
+# Spherical spatial correlation
+m3P_spher <- update(m3P_exp, correlation = corSpher(form = ~ Longitude + Latitude, nugget = TRUE))
+
+AIC(m3P, m3P_exp, m3P_gaus, m3P_spher)
+
+data$Longitude_j <- jitter(data$Longitude, factor = 0.000001)
+data$Latitude_j  <- jitter(data$Latitude,  factor = 0.000001)
+
+library(spdep)
+
+# Create spatial weights based on nearest neighbors (e.g., 5 neighbors)
+coords <- cbind(data$Longitude, data$Latitude)
+nb <- knearneigh(coords, k = 5)
+nb <- knn2nb(nb)
+lw <- nb2listw(nb, style = "W")
+
+# Moran’s I test
+moran_test <- moran.test(data$resid_std, lw)
+moran_test
+
+library(nlme)
+
+m3P_spatial <- gls(
+  mgCpergSoilP ~ ppt.cm * tmeanC + aggregate_stability + active_carbon + ph,
+  data = data,
+  correlation = corExp(form = ~ Longitude + Latitude, nugget = TRUE),
+  method = "REML",
+  na.action = na.exclude
+)
+
+dup_coords <- data[duplicated(data[, c("Longitude", "Latitude")]), c("Longitude", "Latitude")]
+dup_coords
+
+data$Longitude_j <- jitter(data$Longitude, factor = 0.0001)
+data$Latitude_j  <- jitter(data$Latitude, factor = 0.0001)
+
+m3P_spatial <- gls(
+  mgCpergSoilP ~ ppt.cm * tmeanC + aggregate_stability + active_carbon + ph,
+  data = data,
+  correlation = corExp(form = ~ Longitude_j + Latitude_j, nugget = TRUE),
+  method = "REML",
+  na.action = na.exclude
+)
+m3P_nospat <- gls(
+  mgCpergSoilP ~ ppt.cm * tmeanC + aggregate_stability + active_carbon + ph,
+  data = data,
+  method = "REML",
+  na.action = na.exclude
+)
+
+AIC(m3P_nospat, m3P_spatial)
+anova(m3P_spatial)
+summary(m3P_spatial)
+correlation = corExp(form = ~ Longitude + Latitude, nugget = TRUE),
+method = "REML"
+
+m3P_nospat_ML <- update(m3P_nospat, method = "ML")
+m3P_spatial_ML <- update(m3P_spatial, method = "ML")
+
+anova(m3P_nospat_ML, m3P_spatial_ML)
+
+# Standardized residuals
+resid_std <- resid(m3P_spatial, type = "normalized")
+
+data$resid_std <- resid(m3P_spatial, type = "normalized")
+bubble(data, "resid_std", col = c("black", "grey"), main = "Residuals by Space")
+
+
+# Compare with non-spatial model
+AIC (m3P, m3P_spatial)
+
+#########TEST SHMP
+t.test(Frac23$extra, mu = 0)
+
+mean_val <- mean(Frac23$extra, na.rm = TRUE)
+sd_val   <- sd(Frac23$extra, na.rm = TRUE)
+cohen_d  <- mean_val / sd_val
+cohen_d
+
+ggplot(Frac23, aes(x = extra)) +
+  geom_histogram(binwidth = 0.05, fill = "grey70", color = "black") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(x = "extra", y = "Count", title = "Distribution of 'extra' values")
+
+# Number of positive and non-positive values
+n_pos <- sum(Frac23$extra > 0)
+n_total <- length(Frac23$extra)
+
+# Binomial test
+binom.test(n_pos, n_total, p = 0.5, alternative = "greater")
+
+library(effsize)
+library(ggplot2)
+
+Frac23$sign <- ifelse(Frac23$extra > 0, "Positive", "Zero/Negative")
+
+ggplot(Frac23, aes(x = sign)) +
+  geom_bar(fill = c("grey", "black")) +
+  labs(y = "Number of samples", x = "Residual sign") +
+  theme_minimal()
+
+###############semivarograms with models that include both spatial and non ###########
+# Packages
+library(nlme)
+library(gstat)
+library(sp)
+
+# Refit models (if not already loaded)
+m3_spatial <- gls(
+  mgCpergSoilM ~ ppt.cm * tmeanC + aggregate_stability + active_carbon + ph,
+  data = data,
+  correlation = corExp(form = ~ Longitude_j + Latitude_j, nugget = TRUE),
+  method = "REML",
+  na.action = na.exclude
+)
+m3_nospat <- gls(
+  mgCpergSoilM ~ ppt.cm * tmeanC + aggregate_stability + active_carbon + ph,
+  data = data,
+  method = "REML",
+  na.action = na.exclude
+)
+
+# Compare AICs
+AIC(m3_nospat, m3_spatial)
+
+# Residuals
+data$resid_nospat <- resid(m3_nospat, type = "normalized")
+data$resid_spat   <- resid(m3_spatial, type = "normalized")
+
+# Ensure coords numeric
+data$Longitude_j <- as.numeric(data$Longitude_j)
+data$Latitude_j  <- as.numeric(data$Latitude_j)
+
+# Remove rows with missing residuals or coordinates
+data_clean <- na.omit(data[, c("Longitude_j", "Latitude_j", "resid_nospat", "resid_spat")])
+
+# Remove duplicate coordinates (small jitter helps variogram)
+data_clean$Longitude_j <- jitter(data_clean$Longitude_j)
+data_clean$Latitude_j  <- jitter(data_clean$Latitude_j)
+
+# Make spatial object
+sp::coordinates(data_clean) <- ~ Longitude_j + Latitude_j
+
+# Compute variograms
+vg_nospat <- variogram(resid_nospat ~ 1, data_clean)
+vg_spat   <- variogram(resid_spat ~ 1, data_clean)
+
+# Check
+cat("nospat:", nrow(vg_nospat), " | spat:", nrow(vg_spat), "\n")
+
+if (nrow(vg_nospat) == 0 | nrow(vg_spat) == 0) {
+  stop("❌ Variogram failed — likely due to missing or duplicate coordinates.")
+}
+
+# Plot safely
+dev.new(width = 10, height = 5)
+par(mfrow = c(1, 2))
+plot(vg_nospat, main = "No spatial correlation", col = "red", pch = 19)
+plot(vg_spat, main = "With spatial correlation", col = "blue", pch = 19)
+par(mfrow = c(1, 1))
+
+dev.new(width = 6, height = 5)
+plot(vg_nospat, main = "Comparison of semivariograms", col = "red", pch = 19)
+plot(vg_spat, add = TRUE, col = "blue", pch = 19)
+legend("bottomright", legend = c("No spatial", "Spatial (corExp)"),
+       col = c("red", "blue"), pch = 19)
+
+summary(data[, c("Longitude_j", "Latitude_j", "resid_nospat", "resid_spat")])
+
+##############POC semivariogram comparison
+
+# Your GLS models
+m3P_spatial <- gls(
+  mgCpergSoilP ~ ppt.cm * tmeanC + aggregate_stability + active_carbon + ph,
+  data = data,
+  correlation = corExp(form = ~ Longitude_j + Latitude_j, nugget = TRUE),
+  method = "REML",
+  na.action = na.exclude
+)
+
+m3P_nospat <- gls(
+  mgCpergSoilP ~ ppt.cm * tmeanC + aggregate_stability + active_carbon + ph,
+  data = data,
+  method = "REML",
+  na.action = na.exclude
+)
+
+# Standardized residuals
+data$resid_spat   <- resid(m3P_spatial, type = "normalized")
+data$resid_nospat <- resid(m3P_nospat,  type = "normalized")
+
+# ⚠️ DO NOT reset coordinates — your data already has them
+# Just confirm they exist:
+head(coordinates(data))
+# If this returns numeric coordinates, you're good!
+
+# Compute semivariograms
+vg_nospat <- variogram(resid_nospat ~ 1, data)
+vg_spat   <- variogram(resid_spat ~ 1, data)
+
+# Check they actually have data
+nrow(vg_nospat); nrow(vg_spat)
+
+# Plot both side-by-side
+par(mfrow = c(1, 2))
+plot(vg_nospat, main = "No Spatial Correlation Model", col = "red", pch = 19)
+plot(vg_spat, main = "With Spatial Correlation (corExp)", col = "blue", pch = 19)
+par(mfrow = c(1, 1))
+
+# Overlay comparison
+plot(vg_nospat, main = "Semivariogram Comparison", col = "red", pch = 19)
+plot(vg_spat, add = TRUE, col = "blue", pch = 19)
+legend("bottomright",
+       legend = c("No Spatial", "With corExp Spatial Structure"),
+       col = c("red", "blue"), pch = 19)
+
+nrow(vg_nospat); nrow(vg_spat)
+
+
+# Plot side-by-side comparison
+par(mfrow = c(1, 2))
+
+plot(vg_nospat$dist, vg_nospat$gamma,
+     main = "No Spatial Correlation Model",
+     xlab = "Distance", ylab = "Semivariance",
+     pch = 19, col = "red")
+lines(lowess(vg_nospat$dist, vg_nospat$gamma), col = "red", lwd = 2)
+
+plot(vg_spat$dist, vg_spat$gamma,
+     main = "With Spatial Correlation (corExp)",
+     xlab = "Distance", ylab = "Semivariance",
+     pch = 19, col = "blue")
+lines(lowess(vg_spat$dist, vg_spat$gamma), col = "blue", lwd = 2)
+
+# Reset layout
+par(mfrow = c(1, 1))
+
+# Overlay both in one plot for direct comparison
+plot(vg_nospat$dist, vg_nospat$gamma,
+     main = "Semivariogram Comparison",
+     xlab = "Distance", ylab = "Semivariance",
+     pch = 19, col = "red", ylim = range(c(vg_nospat$gamma, vg_spat$gamma)))
+lines(lowess(vg_nospat$dist, vg_nospat$gamma), col = "red", lwd = 2)
+points(vg_spat$dist, vg_spat$gamma, pch = 19, col = "blue")
+lines(lowess(vg_spat$dist, vg_spat$gamma), col = "blue", lwd = 2)
+legend("bottomright", legend = c("No Spatial", "With corExp"), col = c("red", "blue"), pch = 19)
+
+
+###########MAOC
+
+# Your GLS models
+m3_spatial <- gls(
+  mgCpergSoilM ~ ppt.cm *soil_texture_clay * tmeanC + aggregate_stability + active_carbon,
+  data = data,
+  correlation = corExp(form = ~ Longitude_j + Latitude_j, nugget = TRUE),
+  method = "ML",
+  na.action = na.exclude
+)
+
+m3_nospat <- gls(
+  mgCpergSoilM ~ ppt.cm *soil_texture_clay * tmeanC + aggregate_stability + active_carbon,
+  data = data,
+  method = "ML",
+  na.action = na.exclude
+)
+AIC (m3_nospat, m3_spatial)
+# Standardized residuals
+data$resid_spat   <- resid(m3_spatial, type = "normalized")
+data$resid_nospat <- resid(m3_nospat,  type = "normalized")
+
+# ⚠️ DO NOT reset coordinates — your data already has them
+# Just confirm they exist:
+head(coordinates(data))
+# If this returns numeric coordinates, you're good!
+
+# Compute semivariograms
+# Maximum distance = 0.5 (same units as your coordinates, likely degrees)
+max_dist <- 0.5
+
+# Compute variograms with cutoff
+vg_nospat <- variogram(resid_nospat ~ 1, data, cutoff = max_dist)
+vg_spat   <- variogram(resid_spat   ~ 1, data, cutoff = max_dist)
+
+
+#vg_nospat <- variogram(resid_nospat ~ 1, data)
+#vg_spat   <- variogram(resid_spat   ~ 1, data)
+
+# Check they actually have data
+nrow(vg_nospat); nrow(vg_spat)
+
+# Plot both side-by-side
+par(mfrow = c(1, 2))
+plot(vg_nospat, main = "No Spatial Correlation Model", col = "red", pch = 19)
+plot(vg_spat, main = "With Spatial Correlation (corExp)", col = "blue", pch = 19)
+par(mfrow = c(1, 1))
+
+# Overlay comparison
+plot(vg_nospat, main = "Semivariogram Comparison", col = "red", pch = 19)
+plot(vg_spat, add = TRUE, col = "blue", pch = 19)
+legend("bottomright",
+       legend = c("No Spatial", "With corExp Spatial Structure"),
+       col = c("red", "blue"), pch = 19)
+
+nrow(vg_nospat); nrow(vg_spat)
+
+
+# Plot side-by-side comparison
+par(mfrow = c(1, 2))
+
+plot(vg_nospat$dist, vg_nospat$gamma,
+     main = "No Spatial Correlation Model",
+     xlab = "Distance", ylab = "Semivariance",
+     pch = 19, col = "red")
+lines(lowess(vg_nospat$dist, vg_nospat$gamma), col = "red", lwd = 2)
+
+plot(vg_spat$dist, vg_spat$gamma,
+     main = "With Spatial Correlation (corExp)",
+     xlab = "Distance", ylab = "Semivariance",
+     pch = 19, col = "blue")
+lines(lowess(vg_spat$dist, vg_spat$gamma), col = "blue", lwd = 2)
+
+# Reset layout
+par(mfrow = c(1, 1))
+
+# Overlay both in one plot for direct comparison
+plot(vg_nospat$dist, vg_nospat$gamma,
+     main = "Semivariogram Comparison",
+     xlab = "Distance", ylab = "Semivariance",
+     pch = 19, col = "red", ylim = range(c(vg_nospat$gamma, vg_spat$gamma)))
+lines(lowess(vg_nospat$dist, vg_nospat$gamma), col = "red", lwd = 2)
+points(vg_spat$dist, vg_spat$gamma, pch = 19, col = "blue")
+lines(lowess(vg_spat$dist, vg_spat$gamma), col = "blue", lwd = 2)
+legend("bottomright", legend = c("No Spatial", "With corExp"), col = c("red", "blue"), pch = 19)
+
+
+
+
+vg_spat_cloud <- variogram(resid_spat ~ 1, data, cutoff = 0.5, cloud = TRUE)
+head(vg_spat_cloud)
+
+plot(vg_spat_cloud$dist, vg_spat_cloud$gamma,
+     pch = 19, col = rgb(0,0,1,0.5),
+     xlab = "Distance", ylab = "Semivariance",
+     main = "Variogram Cloud (All Pairs)")
+
+######Spatial distr of residuals with spatial correlation
+
+# Your GLS model
+m3P <- gls(mgCpergSoilP ~ ppt.cm * tmeanC +
+             aggregate_stability + active_carbon + ph,
+           data = data, 
+           correlation = corExp(form = ~ Longitude_j + Latitude_j, nugget = TRUE),
+           na.action = na.exclude, 
+           method = "REML")
+
+# 1️⃣ Extract standardized residuals
+data$resid_std <- resid(m3P, type = "normalized")
+
+# 2️⃣ Create a data frame with residuals and coordinates
+resid_df <- data.frame(
+  Longitude = data$Longitude_j,
+  Latitude = data$Latitude_j,
+  resid_std = data$resid_std
+)
+
+# Remove missing coordinates (if any)
+resid_df <- na.omit(resid_df)
+
+# 3️⃣ Add a color column: black for negative, grey for positive
+resid_df$col <- ifelse(resid_df$resid_std < 0, "black", "grey70")
+
+# 3️⃣ Set spatial coordinates
+coordinates(resid_df) <- ~ Longitude + Latitude
+
+# 4️⃣ Define color scheme: black = negative, grey = positive residuals
+#col_vec <- ifelse(resid_df$resid_std < 0, "black", "grey70")
+
+# 5️⃣ Bubble plot of standardized residuals
+bubble(
+  resid_df,
+  "resid_std",
+  col = col_vec,
+  main = "Spatial Distribution of Standardized Residuals",
+  xlab = "Longitude",
+  ylab = "Latitude"
+)
+
+# Create a ggplot-compatible dataframe
+resid_df <- data.frame(
+  Longitude = data$Longitude_j,
+  Latitude = data$Latitude_j,
+  resid_std = resid(m3P, type = "normalized")
+)
+resid_df <- na.omit(resid_df)
+
+# ggplot bubble plot
+ggplot(resid_df, aes(x = Longitude, y = Latitude)) +
+  geom_point(aes(size = abs(resid_std),
+                 fill = ifelse(resid_std > 0, "Positive", "Negative")),
+             shape = 21, color = "black", alpha = 0.8) +
+  scale_fill_manual(values = c("Negative" = "black", "Positive" = "grey70")) +
+  scale_size_continuous(name = "|Standardized residual|") +
+  labs(title = "Spatial Distribution of Standardized Residuals",
+       x = "Longitude", y = "Latitude", fill = "Residual sign") +
+  theme_bw()
+##########MAOC
+m3 = gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC + ppt.cm * tmeanC + 
+           active_carbon + aggregate_stability,
+         data = data, 
+         correlation = corExp(form = ~ Longitude_j + Latitude_j, nugget = TRUE),
+         na.action = na.exclude, 
+         method = "REML")
+
+
+library(nlme)
+
+## Spatial model (your existing one)
+m3 <- gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC +
+            ppt.cm * tmeanC +
+            active_carbon + aggregate_stability,
+          data = data,
+          correlation = corExp(form = ~ Longitude_j + Latitude_j, nugget = TRUE),
+          na.action = na.exclude,
+          method = "REML")
+
+## Non-spatial model (same fixed effects, no correlation structure)
+m3_nospatial <- gls(mgCpergSoilM ~ ppt.cm * soil_texture_clay * tmeanC +
+                      ppt.cm * tmeanC +
+                      active_carbon + aggregate_stability,
+                    data = data,
+                    na.action = na.exclude,
+                    method = "REML")
+
+## Compare AIC
+AIC(m3, m3_nospatial)
+
+## Optional: likelihood-ratio test (using ML instead of REML)
+m3_ML <- update(m3, method = "ML")
+m3_nospatial_ML <- update(m3_nospatial, method = "ML")
+anova(m3_nospatial_ML, m3_ML)
+
+
+
+# 1️⃣ Extract standardized residuals
+data$resid_std <- resid(m3, type = "normalized")
+
+# 2️⃣ Create a data frame with residuals and coordinates
+resid_df <- data.frame(
+  Longitude = data$Longitude_j,
+  Latitude = data$Latitude_j,
+  resid_std = data$resid_std
+)
+
+# Remove missing coordinates (if any)
+resid_df <- na.omit(resid_df)
+
+# 3️⃣ Add a color column: black for negative, grey for positive
+resid_df$col <- ifelse(resid_df$resid_std < 0, "black", "grey70")
+
+# 3️⃣ Set spatial coordinates
+coordinates(resid_df) <- ~ Longitude + Latitude
+
+bubble(
+  resid_df,
+  "resid_std",
+  col = col_vec,
+  main = "Spatial Distribution of Standardized Residuals",
+  xlab = "Longitude",
+  ylab = "Latitude"
+)
+
+# Create a ggplot-compatible dataframe
+resid_df <- data.frame(
+  Longitude = data$Longitude_j,
+  Latitude = data$Latitude_j,
+  resid_std = resid(m3P, type = "normalized")
+)
+resid_df <- na.omit(resid_df)
+
+# ggplot bubble plot
+ggplot(resid_df, aes(x = Longitude, y = Latitude)) +
+  geom_point(aes(size = abs(resid_std),
+                 fill = ifelse(resid_std > 0, "Positive", "Negative")),
+             shape = 21, color = "black", alpha = 0.8) +
+  scale_fill_manual(values = c("Negative" = "black", "Positive" = "grey70")) +
+  scale_size_continuous(name = "|Standardized residual|") +
+  labs(title = "Spatial Distribution of Standardized Residuals",
+       x = "Longitude", y = "Latitude", fill = "Residual sign") +
+  theme_bw()
+
+citation ("gstat")
+
+library(nlme)
+
+## --- Semivariogram for the spatial model (m3P) ---
+var_m3P <- Variogram(m3P,
+                     form = ~ Longitude_j + Latitude_j,
+                     resType = "normalized")
+
+## --- Fit the non-spatial version of the model ---
+m3P_nospatial <- gls(mgCpergSoilP ~ ppt.cm * tmeanC +
+                       aggregate_stability + active_carbon + ph,
+                     data = data,
+                     na.action = na.exclude,
+                     method = "REML")
+
+## --- Semivariogram for the non-spatial model ---
+var_m3P_nospatial <- Variogram(m3P_nospatial,
+                               form = ~ Longitude_j + Latitude_j,
+                               resType = "normalized")
+
+####compare semivariograms
+
+plot(var_m3P, main = "Semivariogram – Spatial Model (m3P)")
+library(nlme)
+library(gstat)
+library(sp)
+
+#----------------------------------------------------------
+# 1. Residuals from m3P (non-spatial model)
+#----------------------------------------------------------
+data$resid_m3P <- residuals(m3P)
+
+# Drop rows with missing residuals
+data_m3P <- data[!is.na(data$resid_m3P), ]
+
+# Empirical semivariogram
+vgm_m3P <- variogram(resid_m3P ~ 1, data_m3P)
+plot(vgm_m3P, main = "Residual Semivariogram – m3P (non-spatial)")
+
+# Optional fitted model
+fit_m3P <- fit.variogram(vgm_m3P, vgm("Sph"))
+plot(vgm_m3P, model = fit_m3P,
+     main = "Fitted Residual Semivariogram – m3P")
+
+#----------------------------------------------------------
+# 2. Residuals from m3P_spatial (spatial GLS model)
+#----------------------------------------------------------
+data$resid_m3P_spatial <- residuals(m3P_spatial, type = "normalized")
+
+# Drop rows with missing residuals
+data_m3P_spatial <- data[!is.na(data$resid_m3P_spatial), ]
+
+# Empirical semivariogram
+vgm_m3P_spatial <- variogram(resid_m3P_spatial ~ 1, data_m3P_spatial)
+plot(vgm_m3P_spatial, main = "Residual Semivariogram – m3P_spatial")
+
+# Optional fitted model
+fit_m3P_spatial <- fit.variogram(vgm_m3P_spatial, vgm("Sph"))
+plot(vgm_m3P_spatial, model = fit_m3P_spatial,
+     main = "Fitted Residual Semivariogram – m3P_spatial")
+
+
+############Same but for MAOC
+
+#----------------------------------------------------------
+# 1. Residuals from m3 (non-spatial model)
+#----------------------------------------------------------
+data$resid_m3 <- residuals(m3)
+
+# Drop rows with missing residuals
+data_m3 <- data[!is.na(data$resid_m3), ]
+
+# Empirical semivariogram
+vgm_m3 <- variogram(resid_m3 ~ 1, data_m3)
+plot(vgm_m3, main = "Residual Semivariogram – m3 (non-spatial)")
+
+# Optional fitted model
+fit_m3 <- fit.variogram(vgm_m3, vgm("Sph"))
+plot(vgm_m3, model = fit_m3,
+     main = "Fitted Residual Semivariogram – m3")
+
+#----------------------------------------------------------
+# 2. Residuals from m3_spatial (spatial GLS model)
+#----------------------------------------------------------
+data$resid_m3_spatial <- residuals(m3_spatial, type = "normalized")
+
+# Drop rows with missing residuals
+data_m3_spatial <- data[!is.na(data$resid_m3_spatial), ]
+
+# Empirical semivariogram
+vgm_m3_spatial <- variogram(resid_m3_spatial ~ 1, data_m3_spatial)
+plot(vgm_m3_spatial, main = "Residual Semivariogram – m3_spatial")
+
+# Optional fitted model
+fit_m3_spatial <- fit.variogram(vgm_m3_spatial, vgm("Sph"))
+plot(vgm_m3_spatial, model = fit_m3_spatial,
+     main = "Fitted Residual Semivariogram – m3_spatial")
+
+
+
+####testing
+
+# Response variables
+responses <- c("tmeanC", "ppt.cm", "aggregate_stability", 
+               "active_carbon", "ph", "overall.score", "soil_texture_clay")
+
+# Filter data once
+data_filtered <- data %>%
+  filter(Type.x != "Field crops") %>%
+  mutate(Type.x = factor(Type.x))
+
+results_list <- list()
+results_list_f <- list()   # <---- new
+
+for (var in responses) {
+  
+  # GLS model
+  model <- gls(as.formula(paste(var, "~ Type.x")),
+               data = data_filtered,
+               method = "REML",
+               weights = varIdent(form = ~1 | Type.x),
+               na.action = na.exclude)
+  
+  # Extract F and p
+  an_out <- anova(model)
+  results_list_f[[var]] <- data.frame(
+    response = var,
+    F_value = an_out$`F-value`[2],
+    p_value = an_out$`p-value`[2]
+  )
+  
+  # Estimated marginal means
+  emm <- emmeans(model, specs = "Type.x", mode = "df.error")
+  
+  # Tukey contrasts
+  tukey <- glht(model, linfct = mcp(Type.x = "Tukey"))
+  tukey_sum <- summary(tukey)
+  
+  # P-values for letters
+  pvals_named <- tukey_sum$test$pvalues
+  names(pvals_named) <- rownames(tukey_sum$linfct)
+  
+  letters_vec <- multcompLetters(pvals_named)$Letters
+  letters_df <- data.frame(Type.x = names(letters_vec), .group = letters_vec)
+  
+  summary_stats <- as.data.frame(emm)[, c("Type.x", "emmean", "SE")]
+  colnames(summary_stats) <- c("Type.x", "mean", "SE")
+  
+  summary_stats <- summary_stats %>%
+    mutate(
+      range = paste0(
+        round(tapply(data_filtered[[var]], data_filtered$Type.x, min, na.rm = TRUE), 2), "–",
+        round(tapply(data_filtered[[var]], data_filtered$Type.x, max, na.rm = TRUE), 2)
+      )
+    ) %>%
+    left_join(letters_df, by = "Type.x") %>%
+    mutate(response = var)
+  
+  results_list[[var]] <- summary_stats
+}
+
+# Combine and clean summary table
+final_results <- bind_rows(results_list)
+final_results_clean <- final_results %>%
+  mutate(
+    mean_rounded = round(mean, 2),
+    SE_rounded   = round(SE, 2),
+    mean_SE_sig  = paste0(mean_rounded, " ± ", SE_rounded, " (", .group, ")"),
+    mean_range   = paste0(mean_SE_sig, " | Range: ", range)
+  )
+
+final_wide <- final_results_clean %>%
+  dplyr::select(Crop = Type.x, Variable = response, mean_range) %>%
+  pivot_wider(names_from = Variable, values_from = mean_range)
+
+# Combine F–p table
+F_results <- bind_rows(results_list_f) %>%
+  mutate(
+    F_value = round(F_value, 3),
+    p_value = signif(p_value, 3)
+  )
+
+# Write to Excel
+wb <- createWorkbook()
+addWorksheet(wb, "Summary")
+writeData(wb, "Summary", final_wide)
+
+addWorksheet(wb, "Model_F_P")
+writeData(wb, "Model_F_P", F_results)
+
+saveWorkbook(wb, "CropType_TablevA.xlsx", overwrite = TRUE)
+
+#####CReate a table with F and P 
+
+# Filter data and convert Type.x to factor
+data_filtered <- data %>%
+   filter(Type.x != "Field crops") %>%
+   mutate(Type.x = factor(Type.x))
+ 
+  responses <- c("tmeanC", "ppt.cm", "aggregate_stability", 
+                                  "active_carbon", "ph", "overall.score", "soil_texture_clay")
+ 
+ sig_list <- list()
+ 
+ for(var in responses){
+   
+   # Pre-filter NAs
+   data_var <- data_filtered %>% filter(!is.na(.data[[var]]))
+   
+   if(length(unique(data_var$Type.x)) < 2) next
+   
+   # Fit GLS with variance structure
+   model <- gls(as.formula(paste(var, "~ Type.x")),
+                                         data = data_var,
+                                        method = "REML",
+                                         weights = varIdent(form = ~1 | Type.x),
+                                         na.action = na.exclude)
+        
+             # Estimated marginal means
+             emm <- emmeans(model, specs = "Type.x", mode = "df.error")
+             
+             # Tukey pairwise comparisons
+             pw <- pairs(emm, adjust = "tukey") %>% summary()
+             
+             # Keep only significant comparisons (p < 0.05)
+             sig_pw <- pw %>% as.data.frame() %>% filter(p.value < 0.05)
+             
+             if(nrow(sig_pw) > 0){
+               sig_pw$response <- var
+               sig_list[[var]] <- sig_pw
+             }
+           }
+ # Combine all significant pairwise differences
+ sig_differences <- bind_rows(sig_list)
+ 
+ # View results
+ sig_differences
+
+ #####show all, even without significance
+ # Filter data and convert Type.x to factor
+ data_filtered <- data %>%
+   filter(Type.x != "Field crops") %>%
+   mutate(Type.x = factor(Type.x))
+ 
+ responses <- c("tmeanC", "ppt.cm", "aggregate_stability", 
+                "active_carbon", "ph", "overall.score", "soil_texture_clay")
+ 
+ all_pw_list <- list()
+ 
+ for (var in responses) {
+   
+   # Remove NAs for this variable
+   data_var <- data_filtered %>% filter(!is.na(.data[[var]]))
+   
+   # If only one level left, skip
+   if (length(unique(data_var$Type.x)) < 2) next
+   
+   # Fit GLS
+   model <- gls(
+     as.formula(paste(var, "~ Type.x")),
+     data = data_var,
+     method = "REML",
+     weights = varIdent(form = ~1 | Type.x),
+     na.action = na.exclude
+   )
+   
+   anova (model)
+   
+   # Estimated marginal means
+   emm <- emmeans(model, specs = "Type.x", mode = "df.error")
+   
+   # Tukey comparisons for *all* pairs
+   pw <- pairs(emm, adjust = "tukey") %>% summary()
+   
+   # Convert to dataframe and add response label
+   pw_df <- pw %>% as.data.frame() %>% mutate(response = var)
+   
+   all_pw_list[[var]] <- pw_df
+ }
+ 
+ # Combine all into one dataframe
+ all_pairwise <- bind_rows(all_pw_list)
+ 
+ # View
+ all_pairwise
+ 
+ library(dplyr)
+ library(emmeans)
+ library(nlme)
+ library(multcomp)
+ library(openxlsx)
+ 
+ # ------------------------
+ # Filter data
+ # ------------------------
+ data_filtered <- data %>%
+   filter(Type.x != "Field crops") %>%
+   mutate(Type.x = factor(Type.x))
+ 
+ responses <- c("tmeanC", "ppt.cm", "aggregate_stability", 
+                "active_carbon", "ph", "overall.score", "soil_texture_clay")
+ 
+ all_pw_list <- list()
+ 
+ # ------------------------
+ # Loop through all variables
+ # ------------------------
+ for (var in responses) {
+   
+   # Remove NAs only for the current variable
+   data_var <- data_filtered %>%
+     filter(!is.na(.data[[var]]))
+   
+   # Skip if only one crop type remains
+   if (length(unique(data_var$Type.x)) < 2) next
+   
+   # GLS model
+   model <- gls(
+     as.formula(paste(var, "~ Type.x")),
+     data = data_var,
+     method = "REML",
+     weights = varIdent(form = ~1 | Type.x),
+     na.action = na.exclude
+   )
+   
+   # Estimated marginal means
+   emm <- emmeans(model, specs = "Type.x", mode = "df.error")
+   
+   # Tukey comparisons (all)
+   pw <- pairs(emm, adjust = "tukey") %>% summary()
+   
+   pw_df <- pw %>% as.data.frame()
+   
+   # ------------------------
+   # Format statistics: t(df) = value, p = value
+   # ------------------------
+   pw_df$stat_formatted <- paste0(
+     "t(df = ", round(pw_df$df, 2), 
+     ") = ", round(pw_df$t.ratio, 2),
+     ", p = ", signif(pw_df$p.value, 3)
+   )
+   
+   pw_df$response <- var
+   
+   all_pw_list[[var]] <- pw_df
+ }
+ 
+ # Combine results
+ all_pairwise <- bind_rows(all_pw_list)
+ 
+ # ------------------------
+ # Reorder columns neatly
+ # ------------------------
+ all_pairwise_clean <- all_pairwise %>%
+   select(response, contrast, estimate, SE, df, t.ratio, p.value, stat_formatted)
+ 
+ # ------------------------
+ # Write to Excel
+ # ------------------------
+ wb <- createWorkbook()
+ addWorksheet(wb, "Tukey_All")
+ 
+ writeData(wb, "Tukey_All", all_pairwise_clean)
+ 
+ saveWorkbook(wb, "Tukey_All_Comparisonsv2.xlsx", overwrite = TRUE)
+ 
+ # GLS model
+ modelSH <- gls(
+   overall.score ~ Type.x,
+   data = data_var,
+   method = "REML",
+   weights = varIdent(form = ~1 | Type.x),
+   na.action = na.exclude
+ )
+ 
+ anova(modelSH)
+ 
+ 
+ ##SidebySide spatial and non ts compare
+ m3P_spatial <- gls(
+   mgCpergSoilP ~ ppt.cm * tmeanC + aggregate_stability + active_carbon + ph,
+   data = data,
+   correlation = corExp(form = ~ Longitude_j + Latitude_j, nugget = TRUE),
+   method = "ML",
+   na.action = na.exclude
+ )
+ m3P_nospat <- gls(
+   mgCpergSoilP ~ ppt.cm * tmeanC + aggregate_stability + active_carbon + ph,
+   data = data,
+   method = "ML",
+   na.action = na.exclude
+ )
+ library(MuMIn)
+ r.squaredGLMM(m3P_nospat, m3P_spatial)
+ 
+ AIC(m3P_nospat, m3P_spatial)
+ anova(m3P_spatial)
+ summary (m3P_nospat)
+ summary(m3P_spatial)
+ install.packages("performance")
+ library(performance)
+ 
+ r2(m3P_spatial)
+ r2(m3P_nospat)
+ 
+ correlation = corExp(form = ~ Longitude + Latitude, nugget = TRUE),
+ method = "REML"
+ 
+ 
+
+ 
+ m3P_nospat_ML <- update(m3P_nospat, method = "ML")
+ m3P_spatial_ML <- update(m3P_spatial, method = "ML")
+ 
+ anova(m3P_nospat_ML, m3P_spatial_ML)
+ 
+  ##data AP 
+ data$AP
+ library(dplyr)
+ 
+ summary_df <- data %>%
+   group_by(AP) %>%
+   summarise(
+     n = n(),
+     mean_mgCpergSoilP = mean(mgCpergSoilP, na.rm = TRUE),
+     se_mgCpergSoilP   = sd(mgCpergSoilP, na.rm = TRUE) / sqrt(sum(!is.na(mgCpergSoilP))),
+     
+     mean_mgCpergSoilM = mean(mgCpergSoilM, na.rm = TRUE),
+     se_mgCpergSoilM   = sd(mgCpergSoilM, na.rm = TRUE) / sqrt(sum(!is.na(mgCpergSoilM)))
+   )
+ summary_df
+ 
+ 

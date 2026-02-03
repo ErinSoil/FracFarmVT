@@ -53,7 +53,6 @@ fracStock2 <-data %>%
 
 view(fracStock)
 
-
 summary_overall <- fracStock %>%
   summarise(
     mean_cStock = mean(cStock, na.rm = TRUE),
@@ -110,7 +109,7 @@ own_theme <- theme_bw(base_size = 11) +
 
 Fig7<-ggplot(fracStock, aes(x = overall.score, y = cStock, color = AP)) +
   geom_point(alpha = 0.7) +  # points for each field
-  geom_smooth(method = "lm", se = TRUE, color = "black") +  # regression line
+  geom_smooth(method = "lm", se = FALSE, color = "black") +  # regression line
  own_theme +
   # theme(
   #   panel.grid.major = element_line(color = "gray80"),  # show major gridlines
@@ -138,7 +137,7 @@ Fig7<-ggplot(fracStock, aes(x = overall.score, y = cStock, color = AP)) +
 Fig7
 
 
-ggsave("FinalFigures/Fig7.jpeg", plot = Fig7, width = 4, height = 3, dpi = 600)
+ggsave("FinalFigures/Fig7v2.jpeg", plot = Fig7, width = 4, height = 3, dpi = 600)
 
 
 # --- Step 1: Clean and set up fracStock ---
